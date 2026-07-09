@@ -1,0 +1,198 @@
+{
+  "_comment": "Per-country scraping config. The column_map (source-page header -> our key) and table_index are the parts most likely to need tuning on first run — see PHASE3_README.md. Validation defaults: sum within tolerance of 100 (raise per country to absorb the 'Others' share), 4pt outlier threshold, auto-quarantine on any flag.",
+  "_coverage": "v1.0 auto-scrapes 10 of 11 countries (all except Belgium, which publishes no national poll table -- polling is regional only). Belgium's data structure is preserved in data.json and the dashboard config but hidden from the UI, pending a v2.0 split into Flanders and Wallonia. Configs built from web-observed page structures and validated against offline fixtures; the first live GitHub Actions run is the final confirmation step (see PHASE3_README.md, Tuning).",
+  "countries": {
+    "sweden": {
+      "url": "https://en.wikipedia.org/wiki/Opinion_polling_for_the_2026_Swedish_general_election",
+      "table_index": 1,
+      "year": 2026,
+      "pollster_col": "Polling firm",
+      "date_col": "Fieldwork date",
+      "poll_keys": ["V", "S", "MP", "C", "L", "M", "KD", "SD"],
+      "column_map": {
+        "V": "V", "S": "S", "MP": "MP", "C": "C", "L": "L", "M": "M", "KD": "KD", "SD": "SD"
+      },
+      "ignore_cols": ["Sample size", "Lead", "Ref.", "Others", "O"],
+      "pollster_whitelist": ["Novus", "Indikator", "Demoskop", "Ipsos", "Verian", "Sifo", "SCB"],
+      "rolling_window": 6,
+      "outlier_threshold": 4.0,
+      "sum_tolerance": 4.0,
+      "max_age_days": 200
+    },
+    "netherlands": {
+      "url": "https://en.wikipedia.org/wiki/Next_Dutch_general_election",
+      "table_index": 1,
+      "year": 2026,
+      "pollster_col": "Polling firm",
+      "date_col": "Fieldwork date",
+      "poll_keys": ["D66", "PVV", "VVD", "PRO", "CDA", "JA21", "FvD", "BBB", "DENK", "SGP", "PvdD", "CU", "SP", "50+", "Volt"],
+      "column_map": {
+        "D66": "D66", "PVV": "PVV", "VVD": "VVD", "GL-PvdA": "PRO", "GL\u2013PvdA": "PRO", "PRO": "PRO",
+        "CDA": "CDA", "JA21": "JA21", "FvD": "FvD", "BBB": "BBB", "Denk": "DENK", "DENK": "DENK",
+        "SGP": "SGP", "PvdD": "PvdD", "CU": "CU", "SP": "SP", "50+": "50+", "50PLUS": "50+", "Volt": "Volt"
+      },
+      "ignore_cols": ["Sample size", "Lead", "Ref.", "Others", "DNA"],
+      "pollster_skip": ["Peil"],
+      "pollster_whitelist": ["Ipsos", "Verian", "I&O", "EenVandaag"],
+      "rolling_window": 5,
+      "outlier_threshold": 4.0,
+      "sum_tolerance": 3.0,
+      "max_age_days": 200
+    },
+    "denmark": {
+      "url": "https://en.wikipedia.org/wiki/Next_Danish_general_election",
+      "table_index": 1,
+      "year": 2026,
+      "pollster_col": "Polling firm",
+      "date_col": "Fieldwork date",
+      "poll_keys": ["A", "F", "V", "I", "O", "M", "C", "\u00d8", "B", "\u00c6", "\u00c5", "H"],
+      "column_map": {
+        "A": "A", "F": "F", "V": "V", "I": "I", "O": "O", "M": "M", "C": "C",
+        "\u00d8": "\u00d8", "B": "B", "\u00c6": "\u00c6", "\u00c5": "\u00c5", "H": "H"
+      },
+      "ignore_cols": ["Sample size", "Others", "Red", "Blue", "Ref."],
+      "pollster_whitelist": ["Voxmeter", "Verian", "Megafon", "YouGov", "Epinion", "Gallup"],
+      "rolling_window": 5,
+      "outlier_threshold": 4.0,
+      "sum_tolerance": 4.0,
+      "max_age_days": 200
+    },
+    "finland": {
+      "url": "https://en.wikipedia.org/wiki/Opinion_polling_for_the_2027_Finnish_parliamentary_election",
+      "table_index": 1,
+      "year": 2026,
+      "pollster_col": "Polling firm",
+      "date_col": "Dates conducted",
+      "poll_keys": ["KOK", "PS", "SDP", "KESK", "VAS", "VIHR", "SFP", "KD", "LIIK"],
+      "column_map": {
+        "KOK": "KOK", "PS": "PS", "SDP": "SDP", "KESK": "KESK", "VAS": "VAS",
+        "VIHR": "VIHR", "SFP": "SFP", "KD": "KD", "LIIK": "LIIK", "LIIKE": "LIIK"
+      },
+      "ignore_cols": ["Sample size", "Others", "Lead", "Gov.", "Opp.", "Ref."],
+      "pollster_whitelist": ["Taloustutkimus", "Verian", "Tietoykk\u00f6nen", "\u00c5bo Akademi"],
+      "rolling_window": 6,
+      "outlier_threshold": 4.0,
+      "sum_tolerance": 5.0,
+      "max_age_days": 220
+    },
+    "germany": {
+      "url": "https://en.wikipedia.org/wiki/Opinion_polling_for_the_next_German_federal_election",
+      "table_index": 1,
+      "year": 2026,
+      "pollster_col": "Polling firm",
+      "date_col": "Fieldwork date",
+      "poll_keys": ["CDU", "AfD", "SPD", "Grüne", "Linke", "FDP", "BSW"],
+      "column_map": {
+        "Union": "CDU", "CDU/CSU": "CDU", "AfD": "AfD", "SPD": "SPD",
+        "Grüne": "Grüne", "Linke": "Linke", "FDP": "FDP", "BSW": "BSW"
+      },
+      "ignore_cols": ["Sample size", "Abs.", "FW", "Others", "Lead"],
+      "pollster_whitelist": ["INSA", "Forsa", "GMS", "Infratest dimap", "Forschungsgruppe Wahlen", "Forschungsgr. Wahlen", "Verian", "YouGov", "Allensbach", "Ipsos"],
+      "rolling_window": 6,
+      "outlier_threshold": 4.0,
+      "sum_tolerance": 8.0,
+      "max_age_days": 200
+    },
+    "poland": {
+      "url": "https://en.wikipedia.org/wiki/Opinion_polling_for_the_next_Polish_parliamentary_election",
+      "table_index": 2,
+      "year": 2026,
+      "pollster_col": "Polling firm",
+      "date_col": "Fieldwork date",
+      "poll_keys": ["KO", "PiS", "Konf", "KKP", "Lewica", "Razem", "PSL", "PL2050"],
+      "column_map": {
+        "KO": "KO", "PiS": "PiS", "Konfederacja": "Konf", "KKP": "KKP",
+        "Lewica": "Lewica", "Razem": "Razem", "PSL": "PSL",
+        "Polska 2050": "PL2050", "PL2050": "PL2050"
+      },
+      "ignore_cols": ["Sample size", "Others", "Don't know", "Lead"],
+      "pollster_skip": ["CBOS"],
+      "pollster_whitelist": ["IBRiS", "Opinia24", "United Surveys", "Pollster", "Social Changes", "OGB", "Research Partner", "IPSOS"],
+      "skip_note": "CBOS publishes without redistributing undecideds, so its shares sum ~85-90% -- non-comparable to the rest of the series and would distort rolling averages. Add redistributed CBOS figures via chat-refresh if wanted.",
+      "rolling_window": 8,
+      "outlier_threshold": 4.0,
+      "sum_tolerance": 8.0,
+      "max_age_days": 200,
+      "note": "Simplified national D'Hondt; Poland's real district system gives large parties a bonus."
+    },
+    "spain": {
+      "url": "https://en.wikipedia.org/wiki/Opinion_polling_for_the_next_Spanish_general_election",
+      "table_match": ["Polling firm/Commissioner", "Fieldwork date", "Turnout"],
+      "year": 2026,
+      "pollster_col": "Polling firm/Commissioner",
+      "date_col": "Fieldwork date",
+      "poll_keys": ["PP", "PSOE", "Vox", "Sumar", "Podemos", "ERC", "Junts", "Bildu", "PNV", "BNG", "CC", "UPN"],
+      "column_index_map": {
+        "PP": 4, "PSOE": 5, "Vox": 6, "Sumar": 7, "Podemos": 8, "ERC": 9,
+        "Junts": 10, "Bildu": 11, "PNV": 12, "BNG": 13, "CC": 14, "UPN": 15
+      },
+      "defaults": { "UPN": 0.2 },
+      "ignore_cols": ["Sample size", "Turnout", "SALF", "Others", "Lead"],
+      "pollster_skip": ["election"],
+      "pollster_whitelist": ["SocioM\u00e9trica", "EM-Analytics", "Electoman\u00eda", "NC Report", "Celeste-Tel", "Sigma Dos", "40dB", "GAD3"],
+      "rolling_window": 8,
+      "outlier_threshold": 4.0,
+      "sum_tolerance": 10.0,
+      "max_age_days": 200,
+      "note": "Party columns are logo headers -> positional column_index_map. Cells combine '% seats' (e.g. '32.0 133'); _to_float takes the leading number. UPN is perennially unreported by several pollsters -> defaults fills 0.2. SALF (newcomer) deliberately excluded from poll_keys; it plus Others explain the ~10pt sum tolerance. CIS is intentionally NOT whitelisted (documented house effect) so its releases quarantine for review."
+    },
+    "italy": {
+      "url": "https://en.wikipedia.org/wiki/Opinion_polling_for_the_next_Italian_general_election",
+      "table_match": ["Polling firm", "Fieldwork date", "FdI"],
+      "year": 2026,
+      "pollster_col": "Polling firm",
+      "date_col": "Fieldwork date",
+      "poll_keys": ["FdI", "PD", "M5S", "FI", "AVS", "Lega", "A", "IV", "+E", "NM"],
+      "column_map": {
+        "FdI": "FdI", "PD": "PD", "M5S": "M5S", "FI": "FI", "AVS": "AVS",
+        "Lega": "Lega", "A": "A", "IV": "IV", "+E": "+E", "NM": "NM"
+      },
+      "ignore_cols": ["Sample size", "DSP", "PLD", "FN", "PTD", "Others", "Lead"],
+      "pollster_skip": ["election"],
+      "pollster_whitelist": ["SWG", "YouTrend", "Ipsos", "EMG", "Tecn\u00e8", "BiDiMedia", "Demos", "Winpoll", "Noto", "Quorum", "Termometro"],
+      "rolling_window": 8,
+      "outlier_threshold": 4.0,
+      "sum_tolerance": 10.0,
+      "max_age_days": 200,
+      "note": "Clean text headers -> name-based column_map. table_match anchors on 'Fieldwork date' + 'FdI' to skip the aggregator table (which uses 'Date updated'). FN (Futuro Nazionale, newcomer ~4-5%) deliberately excluded from poll_keys; it plus DSP/PLD/Others explain the ~10pt sum tolerance."
+    },
+    "austria": {
+      "url": "https://en.wikipedia.org/wiki/Next_Austrian_legislative_election",
+      "table_match": ["Polling firm", "Fieldwork date", "Method"],
+      "year": 2026,
+      "pollster_col": "Polling firm",
+      "date_col": "Fieldwork date",
+      "poll_keys": ["FP\u00d6", "\u00d6VP", "SP\u00d6", "Gr\u00fcne", "NEOS", "KP\u00d6"],
+      "column_index_map": {
+        "FP\u00d6": 4, "\u00d6VP": 5, "SP\u00d6": 6, "Gr\u00fcne": 7, "NEOS": 8, "KP\u00d6": 9
+      },
+      "ignore_cols": ["Sample size", "Method", "Others", "Lead"],
+      "pollster_skip": ["election"],
+      "pollster_whitelist": ["INSA", "Market", "Lazarsfeld", "OGM", "Unique Research", "IFDD", "Hajek", "Spectra"],
+      "rolling_window": 6,
+      "outlier_threshold": 4.0,
+      "sum_tolerance": 8.0,
+      "max_age_days": 220,
+      "note": "Party columns are unlabelled (logo headers) -> positional column_index_map, order FPO/OVP/SPO/Grune/NEOS/KPO confirmed by the 2024 election benchmark row (28.8/26.3/21.1/9.1/8.2/2.4). Page splits polls into yearly tables; table_match picks the FIRST match = the current period. Rows with '?' values (e.g. some OGM releases) are skipped."
+    },
+    "portugal": {
+      "url": "https://en.wikipedia.org/wiki/Opinion_polling_for_the_next_Portuguese_legislative_election",
+      "table_match": ["Polling firm/Link", "Fieldwork date", "Turnout"],
+      "year": 2026,
+      "pollster_col": "Polling firm/Link",
+      "date_col": "Fieldwork date",
+      "poll_keys": ["PS", "AD", "Chega", "IL", "Livre", "CDU", "BE", "PAN"],
+      "column_index_map": {
+        "AD": 4, "PS": 5, "Chega": 6, "IL": 7, "Livre": 8, "CDU": 9, "BE": 10, "PAN": 11
+      },
+      "ignore_cols": ["Sample size", "Turnout", "O", "Lead"],
+      "pollster_skip": ["election"],
+      "pollster_whitelist": ["Intercampus", "Pitag\u00f3rica", "Aximage", "CESOP", "ICS", "ISCTE", "Consulmark"],
+      "rolling_window": 6,
+      "outlier_threshold": 4.0,
+      "sum_tolerance": 8.0,
+      "max_age_days": 400,
+      "note": "Party columns are logo headers -> positional column_index_map, page order AD/PS/Chega/IL/Livre/CDU/BE/PAN/JPP confirmed by the 2025 election benchmark row (31.8/22.8/22.8/5.4/4.1/2.9/2.0/1.4). Note dashboard poll_keys order starts with PS, so the index map is non-monotonic by design. JPP (1 seat, Madeira-only) excluded from poll_keys. '<1' cells are read as 1; the anchor 'Turnout' excludes the PM-preference and leader-rating tables. Portuguese pollsters publish roughly monthly and the page history starts at the May 2025 election, so max_age_days 400 lets the first run backfill the dashboard's genuine 12-month window."
+    }
+  }
+}

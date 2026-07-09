@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>European Polling Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root { --bg:#FBFAF7; --surface:#FFF; --ink:#1C1A17; --muted:#6E6A62; --line:rgba(28,26,23,0.12); --accent:#28527A; }
+  * { box-sizing:border-box; margin:0; }
+  body { font-family:'Segoe UI',system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--ink); line-height:1.55; padding:0 0 4rem; }
+  .appbar { background:#003399; color:#fff; box-shadow:0 1px 6px rgba(0,0,0,0.12); position:sticky; top:0; z-index:20; }
+  .appbar-inner { max-width:1000px; margin:0 auto; padding:14px 1rem; display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; }
+  .appbar-title { font-size:19px; font-weight:700; letter-spacing:-0.01em; color:#fff; }
+  .wrap { max-width:1000px; margin:0 auto; padding:1.8rem 1rem 0; }
+  .country-head { font-size:23px; font-weight:600; letter-spacing:-0.01em; }
+  .country-select { display:flex; align-items:center; gap:8px; }
+  .country-select label { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:rgba(255,255,255,0.85); }
+  select#country { font-size:14px; font-weight:600; font-family:inherit; color:var(--ink); background:#fff; border:1px solid rgba(255,255,255,0.4); border-radius:8px; padding:8px 12px; cursor:pointer; }
+  .lede { font-size:13px; color:var(--muted); margin:2px 0 1rem; }
+  .updated { font-size:12px; color:var(--muted); background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:8px 12px; margin:0 0 1.8rem; }
+  .updated b { color:var(--ink); }
+  section { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:1.4rem 1.6rem; margin-bottom:1.6rem; }
+  .eyebrow { font-size:11px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin-bottom:2px; }
+  h2 { font-size:18px; font-weight:600; margin-bottom:2px; }
+  .sub { font-size:12px; color:var(--muted); margin-bottom:14px; }
+
+  .tabs { display:inline-flex; background:var(--bg); border:1px solid var(--line); border-radius:999px; padding:3px; margin-bottom:16px; gap:2px; flex-wrap:wrap; }
+  .tab { font-size:12px; font-weight:600; color:var(--muted); padding:6px 16px; border-radius:999px; cursor:pointer; border:none; background:transparent; transition:all .15s; }
+  .tab[aria-selected="true"] { background:var(--surface); color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+  .panel[hidden] { display:none; }
+
+  .grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  @media (max-width:820px){ .grid { grid-template-columns:repeat(2,1fr); } }
+  .pcard { border:1px solid var(--line); border-radius:10px; padding:12px; position:relative; overflow:hidden; }
+  .pcard::before { content:''; position:absolute; top:0; left:0; right:0; height:4px; background:var(--pc); }
+  .chead { display:flex; align-items:flex-start; gap:8px; }
+  .emblem { min-width:36px; padding:0 6px; height:34px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-weight:800; letter-spacing:-0.4px; border-radius:8px; line-height:1; box-sizing:border-box; }
+  .ctitle { flex:1; min-width:0; }
+  .pname { font-size:12px; font-weight:600; margin-top:1px; }
+  .pfull { font-size:10px; color:var(--muted); }
+  .leaderrow { display:flex; align-items:center; gap:6px; margin:7px 0 4px; }
+  .pleader { font-size:10.5px; color:var(--ink); line-height:1.25; }
+  .govb { font-size:9px; font-weight:600; border-radius:8px; padding:1.5px 7px; display:inline-block; margin-bottom:6px; }
+  .gov-c { background:#E2EAF5; color:#1D5DA8; border:1px solid #1D5DA855; }
+  .gov-s { background:#F7F0D4; color:#8A7208; border:1px solid #C9A60A55; }
+  .gov-o { background:rgba(28,26,23,0.05); color:var(--muted); border:1px solid var(--line); }
+  .newc { background:#EDE7F6; color:#5B3A8E; border:1px solid #5B3A8E55; }
+  .estmark { font-size:10px; font-weight:600; padding:1px 5px; border-radius:8px; background:#EDE7F6; color:#5B3A8E; vertical-align:middle; }
+  .pavg { font-size:25px; font-weight:600; color:var(--pc); line-height:1.1; }
+  .ptrend { font-size:10.5px; color:var(--muted); margin-bottom:8px; min-height:1em; }
+  .ideo { font-size:10px; margin-top:3px; display:flex; align-items:center; gap:5px; }
+  .ideo .nm { color:var(--muted); flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ideo .val { font-weight:600; font-variant-numeric:tabular-nums; }
+  .bar { height:3px; border-radius:2px; background:rgba(28,26,23,0.08); margin-top:2px; overflow:hidden; }
+  .bar > div { height:100%; background:var(--pc); border-radius:2px; }
+  .below { font-size:9px; font-weight:600; color:#B03030; background:#F9E4E4; border-radius:8px; padding:1px 6px; display:inline-block; margin-top:6px; }
+  @media (max-width:400px){ .emblem { display:none; } }
+
+  .latest-banner { font-size:12px; background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:8px 12px; margin-bottom:14px; }
+  .latest-banner b { color:var(--ink); }
+
+  .hemi-wrap { position:relative; max-width:700px; margin:6px auto 0; }
+  .hemi-tip { position:absolute; pointer-events:none; background:var(--ink); color:#fff; font-size:11px; padding:5px 9px; border-radius:6px; white-space:nowrap; opacity:0; transition:opacity .12s; transform:translate(-50%,-130%); z-index:5; }
+  .hemi-legend { display:flex; flex-wrap:wrap; gap:7px 12px; justify-content:center; margin:2px auto 12px; max-width:740px; }
+  .hl { display:flex; align-items:center; gap:7px; font-size:13px; line-height:1; color:var(--ink); padding:5px 11px; border:1.5px solid var(--line); border-radius:999px; background:var(--surface); cursor:default; transition:border-color .12s, box-shadow .12s, background .12s; }
+  .hl:hover { border-color:var(--cc, var(--accent)); box-shadow:0 1px 6px rgba(0,0,0,0.10); }
+  .hl .sq { width:11px; height:11px; border-radius:50%; flex-shrink:0; }
+  .hl-key { font-weight:600; color:var(--muted); line-height:1; }
+  .hl-n { font-size:17px; font-weight:800; letter-spacing:-0.02em; color:var(--ink); line-height:1; }
+  /* government parties get a coloured, heavier outline */
+  .hl.gov-c { border-color:var(--cc); border-width:2px; background:color-mix(in srgb, var(--cc) 9%, var(--surface)); }
+  .hl.gov-s { border-color:var(--cc); border-style:dashed; border-width:2px; }
+  .hl .gv { font-size:8.5px; font-weight:700; color:#1D5DA8; }
+  .hl .sp { font-size:8.5px; font-weight:700; color:#8A7208; }
+  .seat-dot { transition:opacity .12s; }
+  .majline { text-align:center; font-size:11px; color:var(--muted); margin-top:4px; }
+  .disclosure { margin:6px 0; }
+  .disclosure > summary { display:inline-flex; align-items:center; gap:6px; cursor:pointer; list-style:none; font-size:11px; font-weight:600; letter-spacing:.02em; color:var(--accent); padding:4px 11px; border:1px solid var(--line); border-radius:999px; background:var(--surface); user-select:none; transition:border-color .12s; }
+  .disclosure > summary::-webkit-details-marker { display:none; }
+  .disclosure > summary::before { content:'▸'; font-size:9px; transition:transform .15s; }
+  .disclosure[open] > summary::before { transform:rotate(90deg); }
+  .disclosure > summary:hover { border-color:var(--accent); }
+  .hdr-details { margin-top:8px; }
+  .note-details { margin-top:16px; }
+  .chartbox { position:relative; width:100%; }
+  .note { font-size:11.5px; color:var(--muted); margin-top:12px; line-height:1.6; border-top:1px solid var(--line); padding-top:10px; }
+  .note a { color:var(--accent); }
+  .notes { margin-top:14px; border-top:1px solid var(--line); padding-top:12px; display:flex; flex-direction:column; gap:7px; }
+  .header-notes { border-top:none; padding-top:6px; margin-top:8px; margin-bottom:4px; }
+  .note-row { display:grid; grid-template-columns:104px 1fr; gap:12px; align-items:start; font-size:11.5px; line-height:1.55; }
+  @media (max-width:560px){ .note-row { grid-template-columns:1fr; gap:1px; } }
+  .note-label { font-size:9.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--accent); padding-top:1px; }
+  .note-text { color:var(--muted); }
+  .note-text a { color:var(--accent); }
+  .appfooter { max-width:1000px; margin:2.4rem auto 0; padding:14px 1rem; border-top:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .appfooter .ver { font-size:11px; color:var(--muted); }
+  .to-top { font-size:11px; font-weight:600; color:var(--accent); background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:6px 14px; cursor:pointer; transition:all .12s; }
+  .to-top:hover { border-color:var(--accent); background:var(--bg); }
+
+  .blocrow { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
+  .bloc { font-size:11.5px; padding:4px 11px; border-radius:20px; border:1px solid var(--line); background:var(--bg); }
+
+  .mb { margin-top:18px; border:1px solid var(--line); border-radius:12px; padding:14px 16px; background:var(--bg); }
+  .mb-head { display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:4px; }
+  .mb-title { font-size:13px; font-weight:600; }
+  .mb-hint { font-size:11px; color:var(--muted); }
+  .mb-presets { display:flex; gap:6px; flex-wrap:wrap; margin:10px 0; }
+  .mb-preset { font-size:11px; font-weight:600; padding:4px 11px; border-radius:999px; border:1px solid var(--line); background:var(--surface); color:var(--ink); cursor:pointer; transition:all .12s; }
+  .mb-preset:hover { border-color:var(--accent); color:var(--accent); }
+  .mb-chips { display:flex; gap:7px; flex-wrap:wrap; margin:10px 0; }
+  .mb-chip { display:flex; align-items:center; gap:7px; font-size:12px; font-weight:600; padding:6px 12px 6px 8px; border-radius:999px; border:1.5px solid var(--line); background:var(--surface); cursor:pointer; transition:all .12s; user-select:none; }
+  .mb-chip .dot { width:11px; height:11px; border-radius:50%; }
+  .mb-chip .sc { font-weight:500; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .mb-chip[data-on="true"] { border-color:var(--cc); background:var(--cc-tint); }
+  .mb-chip[data-on="true"] .sc { color:var(--ink); }
+  .mb-meter-wrap { margin-top:12px; }
+  .mb-meter { position:relative; height:26px; border-radius:8px; background:rgba(28,26,23,0.06); overflow:hidden; display:flex; }
+  .mb-seg { height:100%; transition:width .25s ease; }
+  .mb-majline { position:absolute; top:-3px; bottom:-3px; width:2px; background:var(--ink); z-index:3; }
+  .mb-readout { display:flex; align-items:baseline; gap:10px; margin-top:16px; flex-wrap:wrap; }
+  .mb-total { font-size:30px; font-weight:700; line-height:1; font-variant-numeric:tabular-nums; }
+  .mb-status { font-size:12.5px; font-weight:600; padding:3px 12px; border-radius:999px; }
+  .mb-ok { background:#E4F0E6; color:#2E7D32; }
+  .mb-no { background:#F9E4E4; color:#B03030; }
+  .mb-detail { font-size:11.5px; color:var(--muted); }
+</style>
+</head>
+<body>
+
+<header class="appbar">
+  <div class="appbar-inner">
+    <span class="appbar-title">🌍 Global Polling Dashboard</span>
+    <div class="country-select">
+      <label for="country">Country</label>
+      <select id="country"></select>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<h1 id="dashTitle" class="country-head"></h1>
+<details class="disclosure hdr-details">
+  <summary>Poll details</summary>
+  <div class="notes header-notes" id="dashHeader"></div>
+</details>
+
+<section>
+  <p class="eyebrow">Standings &amp; Projection</p>
+  <div class="tabs" role="tablist" id="viewTabs"></div>
+
+  <div class="panel" id="viewPanel" role="tabpanel">
+    <div class="latest-banner" id="viewBanner" hidden></div>
+    <h2 id="viewHeading"></h2>
+    <p class="sub" id="viewSub"></p>
+    <div class="grid" id="cards-view"></div>
+
+    <h2 style="margin-top:1.6rem;"><span id="hemiHeadingLabel">Projected chamber</span> — <span id="seatTotalV"></span> seats</h2>
+    <div class="tabs" role="tablist" id="hemiTabsV">
+      <button class="tab" role="tab" aria-selected="true"  data-hemi="hemiV-proj">Projected</button>
+      <button class="tab" role="tab" aria-selected="false" data-hemi="hemiV-curr">Current chamber</button>
+    </div>
+    <div class="panel" id="hemiV-proj" role="tabpanel"></div>
+    <div class="panel" id="hemiV-curr" role="tabpanel" hidden></div>
+    <div id="mb-view"></div>
+    <div class="blocrow" id="blocs-view"></div>
+  </div>
+
+  <details class="disclosure note-details">
+    <summary>More details</summary>
+    <div class="notes" id="part1Note"></div>
+  </details>
+</section>
+
+<section>
+  <p class="eyebrow">The Year So Far</p>
+  <h2>Poll-by-poll movement (last 12 months)</h2>
+  <p class="sub">Every individual poll plotted at its fieldwork end date. Tap legend entries to isolate parties.</p>
+  <div class="chartbox" style="height:460px;">
+    <canvas id="trendChart" role="img" aria-label="Line chart of individual polls over the last twelve months for the selected country."></canvas>
+  </div>
+  <p class="note" id="part2Note"></p>
+</section>
+
+</div>
+
+<footer class="appfooter">
+  <span class="ver">Global Polling Dashboard · v1.0</span>
+  <button class="to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑ Back to top</button>
+</footer>
+
+<script>
+// =================== COUNTRY CONFIGS ===================
+const COUNTRIES = {
+  sweden: {
+    flag: '🇸🇪', name: 'Sweden', year: 2026,
+    chamber: 'Riksdag', totalSeats: 349, majority: 175, threshold: 4.0,
+    seatMethod: 'sainteLague', firstDivisor: 1.2,
+    electionLine: 'Next election 13 Sep 2026 · 349 seats · 4% threshold',
+    updated: 'Last updated: <b>25 May 2026</b> (latest poll in dataset)',
+    showThresholdLine: true, trendMax: 38,
+    pollKeys: ['V','S','MP','C','L','M','KD','SD'],
+    electionDate: '2022-09-11', electionLabel: '2022 general election',
+    electionResult: [6.75, 30.33, 5.08, 6.71, 4.61, 19.10, 5.34, 20.54],
+    seatingOrder: ['V','S','MP','C','L','KD','M','SD'],
+    notes: [
+      { l:'Seat model', t:'Nationwide modified Sainte-Laguë (first divisor 1.2), 4% threshold — mirrors Sweden\u2019s two-tier system, whose 39 adjustment seats restore national proportionality.' },
+      { l:'Current chamber', t:'The 2022 election result.' },
+      { l:'Government', t:'A solid ring marks a cabinet party (M, KD, L). A dashed ring marks the Sweden Democrats, supporting from outside under the Tid\u00f6 Agreement.' },
+      { l:'Sources', t:'<a href="https://en.wikipedia.org/wiki/Opinion_polling_for_the_2026_Swedish_general_election">Wikipedia</a> (Novus, Indikator, Demoskop, Ipsos, Verian), cross-checked against <a href="https://politpro.eu/en/sweden/opinion-polls">PolitPro</a>.' },
+    ],
+    parties: [
+      { key:'V',  name:'Vänsterpartiet', full:'Left Party', color:'#B00B1E', leader:'Nooshi Dadgostar', gov:null, ideo:[['Dem. socialism/Left-populism',70],['Environmentalism',50]] },
+      { key:'MP', name:'Miljöpartiet', full:'Green Party', color:'#53A045', leader:'Lind & Helldén', gov:null, ideo:[['Environmentalism',80],['Social liberalism',70]] },
+      { key:'S',  name:'Socialdemokraterna', full:'Social Democrats', color:'#E8112D', leader:'Magdalena Andersson', gov:null, ideo:[['Social democracy',80],['Modern liberalism',40]] },
+      { key:'C',  name:'Centerpartiet', full:'Centre Party', color:'#117F40', leader:'E. Thand Ringqvist', gov:null, ideo:[['Centrism',70],['Neoliberalism',50]] },
+      { key:'L',  name:'Liberalerna', full:'Liberals', color:'#0E6AB0', leader:'Simona Mohamsson', gov:'coalition', ideo:[['Liberalism/Libertarianism',70],['Social conservatism',40]] },
+      { key:'M',  name:'Moderaterna', full:'Moderate Party', color:'#1D5DA8', leader:'Ulf Kristersson (PM)', gov:'coalition', ideo:[['Fiscal conservatism',80],['Liberalism/Libertarianism',50]] },
+      { key:'KD', name:'Kristdemokraterna', full:'Christian Democrats', color:'#2B2E83', leader:'Ebba Busch', gov:'coalition', ideo:[['Social conservatism',80],['Fiscal conservatism',55]] },
+      { key:'SD', name:'Sverigedemokraterna', full:'Sweden Democrats', color:'#C9A60A', leader:'Jimmie Åkesson', gov:'support', ideo:[['Right-populism',70],['National conservatism',60]] },
+    ],
+    currentSeats: { V:24, S:107, MP:18, C:24, L:16, M:68, KD:19, SD:73 },
+    electionSeats: { V:24, S:107, MP:18, C:24, L:16, M:68, KD:19, SD:73 },
+    blocs: [
+      { label:'Red-Green', keys:['S','V','MP','C'] },
+      { label:'Tidö bloc', keys:['M','SD','KD','L'] },
+      { label:'Left bloc', keys:['V','S','MP'] },
+    ],
+    hemiPair: ['Red-Green','Tidö bloc'],
+    // polls oldest -> newest; values in pollKeys order
+    polls: [
+      ['Novus','2025-06-13',7.4,35.3,5.5,5.4,2.1,18.3,3.8,20.2],
+      ['Indikator','2025-06-24',7.3,36.7,5.3,5.3,2.8,18.2,3.8,19.0],
+      ['Verian','2025-08-17',7.0,33.9,6.3,5.4,2.8,18.3,3.5,20.5],
+      ['Novus','2025-08-24',8.6,34.1,4.9,5.0,3.0,17.6,3.9,21.0],
+      ['Verian','2025-09-07',7.1,34.2,5.9,5.2,2.3,18.1,4.1,20.8],
+      ['Demoskop','2025-09-22',6.0,34.1,6.5,4.8,2.3,18.7,4.9,20.2],
+      ['Novus','2025-10-19',6.9,34.9,4.4,5.4,2.2,18.0,4.0,22.6],
+      ['Indikator','2025-10-27',6.6,35.4,4.7,4.9,2.0,17.4,4.3,22.9],
+      ['Ipsos','2025-11-17',8.0,36.0,6.0,5.0,2.0,17.0,4.0,21.0],
+      ['Demoskop','2025-11-24',6.7,33.1,6.4,5.0,2.4,18.2,4.7,21.4],
+      ['Novus','2025-12-14',6.2,34.1,5.1,4.9,2.4,17.6,3.9,23.7],
+      ['Indikator','2025-12-29',7.1,35.2,6.4,3.8,2.1,18.4,3.9,21.4],
+      ['Indikator','2026-01-06',7.1,33.8,6.2,4.8,3.4,18.6,3.2,21.6],
+      ['Verian','2026-01-12',7.2,33.7,6.1,4.6,2.9,19.3,4.0,20.3],
+      ['Novus','2026-01-18',6.9,34.2,5.5,4.8,2.4,17.5,4.3,22.5],
+      ['Indikator','2026-01-25',7.5,35.4,4.7,5.3,1.4,18.9,3.9,21.4],
+      ['Demoskop','2026-01-26',7.4,33.1,6.1,4.5,2.6,17.8,5.4,20.8],
+      ['Ipsos','2026-01-29',8.0,34.0,6.0,5.0,2.0,18.0,4.0,21.0],
+      ['Verian','2026-02-08',7.4,34.4,6.0,4.6,2.0,18.2,5.6,20.1],
+      ['Novus','2026-02-15',7.4,34.6,5.1,5.2,2.1,17.5,3.8,22.9],
+      ['Indikator','2026-02-23',8.0,35.0,5.0,5.0,1.0,19.0,4.0,21.0],
+      ['Ipsos','2026-02-23',9.0,33.0,6.0,6.0,2.0,17.0,4.0,20.0],
+      ['Demoskop','2026-02-24',6.8,33.3,6.3,5.5,2.5,17.2,5.3,21.2],
+      ['Verian','2026-03-08',7.7,32.4,6.5,5.9,2.1,17.0,5.3,21.1],
+      ['Novus','2026-03-18',7.5,32.7,5.7,6.3,2.3,17.5,5.1,21.0],
+      ['Demoskop','2026-03-19',7.5,31.1,6.6,5.9,4.5,17.3,5.0,19.9],
+      ['Ipsos','2026-03-22',9.0,33.0,6.0,6.0,2.0,18.0,4.0,20.0],
+      ['Indikator','2026-03-29',7.0,33.4,5.7,5.7,2.2,18.4,4.6,20.6],
+      ['Verian','2026-04-05',7.7,32.7,6.1,6.8,2.2,16.8,5.7,20.0],
+      ['Novus','2026-04-19',7.6,32.4,6.1,6.6,2.9,18.4,4.8,19.8],
+      ['Indikator','2026-04-27',7.2,33.6,5.7,6.4,2.4,18.3,5.0,19.4],
+      ['Demoskop','2026-04-27',7.1,33.2,7.2,5.9,4.0,16.5,4.8,19.9],
+      ['Ipsos','2026-04-27',9.0,32.0,7.0,6.0,2.0,19.0,5.0,19.0],
+      ['Verian','2026-05-10',7.9,32.5,7.9,5.5,2.0,17.2,5.1,18.9],
+      ['Novus','2026-05-17',8.8,30.9,7.1,6.0,2.4,18.2,5.6,19.2],
+      ['Indikator','2026-05-24',7.8,33.7,6.1,6.3,2.0,17.5,4.3,20.4],
+      ['Demoskop','2026-05-24',7.6,31.9,8.1,6.0,3.1,16.7,5.7,19.0],
+      ['Ipsos','2026-05-25',8.0,32.0,6.0,6.0,2.0,19.0,5.0,20.0],
+    ],
+  },
+
+  netherlands: {
+    flag: '🇳🇱', name: 'Netherlands', year: 2026,
+    chamber: 'Tweede Kamer', totalSeats: 150, majority: 76, threshold: 0.67,
+    seatMethod: 'dhondt',
+    electionLine: 'Next election scheduled 2030 · 150 seats · 0.67% (one-seat) threshold',
+    updated: 'Last updated: <b>25 May 2026</b> (latest poll · Ipsos) · GroenLinks\u2013PvdA formally became <b>Progressief Nederland (PRO)</b> on 13 June 2026 · includes one reverse-engineered <b>Peil/de Hond</b> row, flagged "(est.)"',
+    showThresholdLine: false, trendMax: 20,
+    pollKeys: ['D66','PVV','VVD','PRO','CDA','JA21','FvD','BBB','DENK','SGP','PvdD','CU','SP','50+','Volt'],
+    electionDate: '2025-10-29', electionLabel: '29 Oct 2025 election',
+    electionResult: [16.9, 16.8, 14.2, 12.7, 11.8, 6.0, 4.6, 2.7, 2.4, 2.3, 2.1, 1.9, 1.9, 1.4, 1.1],
+    seatingOrder: ['SP','PvdD','PRO','DENK','Volt','D66','CU','CDA','50+','VVD','SGP','BBB','JA21','DNA','PVV','FvD'],
+    notes: [
+      { l:'Seat model', t:'D\u2019Hondt over 150 seats, 0.67% (one-seat) threshold — the real Tweede Kamer method.' },
+      { l:'Current chamber', t:'The 29 Oct 2025 election result — before the Jan 2026 split of seven PVV MPs into the Markuszower group.' },
+      { l:'Government', t:'A solid ring marks the Jetten minority cabinet (D66, VVD, CDA), the first Dutch cabinet without a support agreement. Everyone else is in opposition.' },
+      { l:'Polls', t:'Mostly published vote shares (Ipsos, Verian/EenVandaag). Peil.nl reports seats only — it is Maurice de Hond\u2019s house — so its single row is reverse-engineered to vote shares and flagged \u201c(est.)\u201d.' },
+      { l:'Newcomer', t:'<b>DNA</b> (Markuszower\u2019s ex-PVV splinter) shows in the latest view at its last reading, but stays out of the average and trend until more polls carry it.' },
+      { l:'Sources', t:'<a href="https://politpro.eu/en/netherlands/opinion-polls">PolitPro</a> (Ipsos, Verian), cross-checked against <a href="https://en.wikipedia.org/wiki/Next_Dutch_general_election">Wikipedia</a>; composition from the <a href="https://en.wikipedia.org/wiki/2025_Dutch_general_election">2025 result</a>.' },
+    ],
+    parties: [
+      { key:'PRO',  name:'Progressief Nederland', full:'Progressive Netherlands', color:'#E5007D', leader:'Jesse Klaver', gov:null, ideo:[['Social democracy',75],['Environmentalism',60]] },
+      { key:'D66',  name:'Democraten 66', full:'Democrats 66', color:'#00B13C', leader:'Rob Jetten (PM)', gov:'coalition', ideo:[['Social liberalism',70],['Modern liberalism',60]] },
+      { key:'VVD',  name:'VVD', full:"People's Party for Freedom and Democracy", color:'#FF7900', leader:'Dilan Yeşilgöz', gov:'coalition', ideo:[['Neoliberalism',65],['Fiscal conservatism',60]] },
+      { key:'PVV',  name:'Partij voor de Vrijheid', full:'Party for Freedom', color:'#4F6FB5', leader:'Geert Wilders', gov:null, ideo:[['Right-populism',75],['National conservatism',75]] },
+      { key:'CDA',  name:'CDA', full:'Christian Democratic Appeal', color:'#2E8B7F', leader:'Henri Bontenbal', gov:'coalition', ideo:[['Centrism',65],['Social conservatism',45]] },
+      { key:'JA21', name:'JA21', full:'Right Answer 21', color:'#1F3A93', leader:'Joost Eerdmans', gov:null, ideo:[['Right-populism',60],['Fiscal conservatism',55]] },
+      { key:'FvD',  name:'Forum voor Democratie', full:'Forum for Democracy', color:'#6E1423', leader:'Lidewij de Vos', gov:null, ideo:[['National conservatism',90],['Right-populism',80]] },
+      { key:'BBB',  name:'BoerBurgerBeweging', full:'Farmer–Citizen Movement', color:'#A4C520', leader:'Henk Vermeer', gov:null, ideo:[['Right-populism',80],['Regionalism/Agrarianism',60]] },
+      { key:'DENK', name:'DENK', full:'Think', color:'#00BCD4', leader:'Stephan van Baarle', gov:null, ideo:[['Social democracy',55],['Social conservatism',45]] },
+      { key:'SGP',  name:'SGP', full:'Reformed Political Party', color:'#D35400', leader:'Chris Stoffer', gov:null, ideo:[['Social conservatism',90],['Fiscal conservatism',50]] },
+      { key:'PvdD', name:'Partij voor de Dieren', full:'Party for the Animals', color:'#00773C', leader:'Esther Ouwehand', gov:null, ideo:[['Environmentalism',90],['Dem. socialism/Left-populism',50]] },
+      { key:'CU',   name:'ChristenUnie', full:'Christian Union', color:'#00A1DE', leader:'Mirjam Bikker', gov:null, ideo:[['Social conservatism',55],['Social democracy',45]] },
+      { key:'SP',   name:'Socialistische Partij', full:'Socialist Party', color:'#E3001B', leader:'Jimmy Dijk', gov:null, ideo:[['Dem. socialism/Left-populism',70],['Marxism',40]] },
+      { key:'50+',  name:'50PLUS', full:'50PLUS', color:'#D4A017', leader:'—', gov:null, ideo:[['Modern liberalism',50],['Social conservatism',40]] },
+      { key:'Volt', name:'Volt', full:'Volt Netherlands', color:'#502379', leader:'Laurens Dassen', gov:null, ideo:[['Modern liberalism',70],['Environmentalism',50]] },
+      { key:'DNA',  name:'De Nederlandse Alliantie', full:'The Dutch Alliance', color:'#21618C', leader:'Gidi Markuszower', gov:null, newcomer:true, newcomerReading:2.0, newcomerSource:'Peil/de Hond, Apr 2026 (≈3 seats)', ideo:[['Right-populism',80],['National conservatism',70]] },
+    ],
+    currentSeats: { D66:26, PVV:19, VVD:22, PRO:20, CDA:18, JA21:9, FvD:7, BBB:4, DENK:3, SGP:3, PvdD:3, CU:3, SP:3, '50+':2, Volt:1, DNA:7 },
+    electionSeats: { D66:26, PVV:26, VVD:22, PRO:20, CDA:18, JA21:9, FvD:7, BBB:4, DENK:3, SGP:3, PvdD:3, CU:3, SP:3, '50+':2, Volt:1 },
+    blocs: [
+      { label:'Left bloc', keys:['PRO','SP','PvdD','Volt','DENK'] },
+      { label:'Coalition (D66+VVD+CDA)', keys:['D66','VVD','CDA'] },
+      { label:'Centre bloc', keys:['D66','CU','CDA','50+'] },
+      { label:'Right bloc', keys:['PVV','VVD','JA21','FvD','BBB','SGP','DNA'] },
+    ],
+    hemiPair: ['Left bloc','Right bloc'],
+    polls: [
+      ['Verian','2026-01-26',17.0,11.7,14.7,13.7,11.0,7.8,6.9,1.2,2.6,1.9,2.3,2.5,2.3,3.1,1.4],
+      ['Verian','2026-02-23',14.7,14.0,15.3,14.7,9.3,8.0,6.7,2.0,2.0,2.0,2.7,2.0,3.3,2.0,1.3],
+      ['Ipsos','2026-03-09',15.2,12.1,13.6,15.9,9.9,9.5,6.8,0.9,1.8,2.5,2.6,2.6,3.0,2.4,1.1],
+      ['Ipsos','2026-04-13',12.6,12.1,13.2,16.7,9.1,8.5,8.5,1.4,1.6,2.7,2.9,2.6,3.4,3.1,1.7],
+      ['Peil/de Hond (est.)','2026-04-20',13.3,12.7,11.3,15.3,10.7,11.3,10.7,0.7,2.0,2.0,2.7,1.3,2.0,2.7,1.3],
+      ['Verian','2026-04-27',11.0,13.0,13.0,16.0,11.0,8.0,8.0,1.0,3.0,3.0,3.0,3.0,3.0,3.0,2.0],
+      ['Verian','2026-05-11',12.9,12.6,13.5,15.4,9.8,8.5,7.2,0.8,2.6,2.4,3.7,2.7,3.1,3.0,1.6],
+      ['Ipsos','2026-05-25',11.1,13.5,14.8,16.3,10.3,7.7,6.5,1.3,2.7,2.7,3.3,2.1,2.9,2.9,1.9],
+    ],
+  },
+
+  denmark: {
+    flag: '🇩🇰', name: 'Denmark', year: 2026,
+    chamber: 'Folketing', totalSeats: 175, majority: 90, threshold: 2.0,
+    seatMethod: 'largestRemainder',
+    electionLine: 'Recent election 24 Mar 2026 · 175 mainland seats (+4 North Atlantic) · 90 for a majority · 2% threshold',
+    updated: 'Last updated: <b>31 May 2026</b> (latest poll · Voxmeter) · post-election polling; the <b>Frederiksen III</b> centre-left coalition took office 3 June 2026',
+    showThresholdLine: true, trendMax: 26,
+    pollKeys: ['A','F','V','I','O','M','C','Ø','B','Æ','Å','H'],
+    electionDate: '2026-03-24', electionLabel: '24 Mar 2026 election',
+    electionResult: [21.85, 11.59, 10.14, 9.37, 9.10, 7.68, 7.59, 6.34, 5.82, 5.75, 2.58, 2.13],
+    seatingOrder: ['Ø','Å','F','A','B','M','V','C','I','Æ','O','H'],
+    notes: [
+      { l:'Seat model', t:'Largest-remainder (Hare quota) over the 175 mainland seats, 2% threshold — reproduces Denmark\u2019s levelling-seat allocation exactly.' },
+      { l:'North Atlantic', t:'The 4 Greenland/Faroe seats are elected separately and not modelled. The 90-seat majority is of the full 179-seat Folketing, so a mainland bloc near 88 plus North Atlantic support can govern (the current ones lean toward Frederiksen).' },
+      { l:'Current chamber', t:'The 24 Mar 2026 election result.' },
+      { l:'Government', t:'A solid ring marks the Frederiksen III coalition (A, F, M, B). A dashed ring marks the Red\u2013Green Alliance (Ø) and the Alternative (Å), supporting from outside.' },
+      { l:'Dataset', t:'Post-election polling — the March 2026 election is the structural baseline.' },
+      { l:'Sources', t:'<a href="https://en.wikipedia.org/wiki/Next_Danish_general_election">Wikipedia</a> (Voxmeter, Verian), cross-checked against <a href="https://politpro.eu/en/denmark">PolitPro</a> and the <a href="https://en.wikipedia.org/wiki/2026_Danish_general_election">2026 result</a>.' },
+    ],
+    parties: [
+      { key:'A',  name:'Socialdemokratiet', full:'Social Democrats', color:'#E2001A', leader:'Mette Frederiksen (PM)', gov:'coalition', ideo:[['Social democracy',80],['Social conservatism',20]] },
+      { key:'F',  name:'SF · Socialistisk Folkeparti', full:'Green Left', color:'#E6007E', leader:'Pia Olsen Dyhr', gov:'coalition', ideo:[['Environmentalism',70],['Dem. socialism/Left-populism',50]] },
+      { key:'V',  name:'Venstre', full:'Liberal Party', color:'#005CA9', leader:'Troels Lund Poulsen', gov:null, ideo:[['Fiscal conservatism',65],['Neoliberalism',55]] },
+      { key:'I',  name:'Liberal Alliance', full:'Liberal Alliance', color:'#00A0A0', leader:'Alex Vanopslagh', gov:null, ideo:[['Liberalism/Libertarianism',80],['Neoliberalism',60]] },
+      { key:'O',  name:'Dansk Folkeparti', full:'Danish People\u2019s Party', color:'#EAC711', leader:'Morten Messerschmidt', gov:null, ideo:[['Right-populism',70],['National conservatism',50]] },
+      { key:'M',  name:'Moderaterne', full:'Moderates', color:'#6B2C91', leader:'Lars Løkke Rasmussen', gov:'coalition', ideo:[['Centrism',70],['Modern liberalism',50]] },
+      { key:'C',  name:'Konservative', full:'Conservatives', color:'#0B5C3F', leader:'Mona Juul', gov:null, ideo:[['Fiscal conservatism',60],['Social conservatism',55]] },
+      { key:'Ø',  name:'Enhedslisten', full:'Red\u2013Green Alliance', color:'#E64415', leader:'Pelle Dragsted', gov:'support', ideo:[['Environmentalism',60],['Marxism',50]] },
+      { key:'B',  name:'Radikale Venstre', full:'Social Liberals', color:'#B07AB0', leader:'Martin Lidegaard', gov:'coalition', ideo:[['Social liberalism',70],['Modern liberalism',55]] },
+      { key:'Æ',  name:'Danmarksdemokraterne', full:'Denmark Democrats', color:'#1C3F6E', leader:'Inger Støjberg', gov:null, ideo:[['Right-populism',60],['Social conservatism',50]] },
+      { key:'Å',  name:'Alternativet', full:'The Alternative', color:'#7AB51D', leader:'Franciska Rosenkilde', gov:'support', ideo:[['Environmentalism',80],['Dem. socialism/Left-populism',50]] },
+      { key:'H',  name:'Borgernes Parti', full:'Citizens\u2019 Party', color:'#34495E', leader:'Lars Boje Mathiesen', gov:null, ideo:[['Right-populism',70],['Liberalism/Libertarianism',45]] },
+    ],
+    currentSeats: { A:38, F:20, V:18, I:16, O:16, M:14, C:13, 'Ø':11, B:10, 'Æ':10, 'Å':5, H:4 },
+    electionSeats: { A:38, F:20, V:18, I:16, O:16, M:14, C:13, 'Ø':11, B:10, 'Æ':10, 'Å':5, H:4 },
+    blocs: [
+      { label:'Left bloc', keys:['Ø','Å','F','A','B'] },
+      { label:'Centre-Left bloc', keys:['F','A','B','M'] },
+      { label:'Centre bloc', keys:['A','B','M','V'] },
+      { label:'Centre-Right bloc', keys:['M','V','C','I','Æ'] },
+      { label:'Right bloc', keys:['V','C','I','Æ','O'] },
+    ],
+    hemiPair: ['Left bloc','Right bloc'],
+    polls: [
+      ['Verian','2026-05-05',20.7,12.7,8.4,9.5,12.0,8.0,8.3,6.7,5.3,5.0,2.4,0.9],
+      ['Voxmeter','2026-05-10',22.0,11.2,9.8,9.2,11.1,7.5,7.9,7.3,5.9,4.8,2.4,0.8],
+      ['Voxmeter','2026-05-17',20.7,12.3,10.4,10.5,10.9,6.7,7.7,7.0,5.3,4.8,3.0,0.5],
+      ['Voxmeter','2026-05-24',20.9,12.8,10.1,9.5,10.7,7.2,8.4,6.0,6.4,4.5,2.6,0.8],
+      ['Voxmeter','2026-05-31',21.9,12.3,9.2,10.4,10.5,7.4,7.7,6.8,5.4,5.3,2.5,0.6],
+    ],
+  },
+
+  finland: {
+    flag: '🇫🇮', name: 'Finland', year: 2026,
+    chamber: 'Eduskunta', totalSeats: 200, majority: 101, threshold: 0,
+    seatMethod: 'dhondt',
+    electionLine: 'Next election Apr 2027 · 200 seats · no legal threshold · 101 for a majority',
+    updated: 'Last updated: <b>1 June 2026</b> (latest poll · Taloustutkimus) · the centre-right <b>Orpo government</b> trails badly; SDP leads in opposition',
+    showThresholdLine: false, trendMax: 28,
+    pollKeys: ['KOK','PS','SDP','KESK','VAS','VIHR','SFP','KD','LIIK'],
+    electionDate: '2023-04-02', electionLabel: '2 Apr 2023 election',
+    electionResult: [20.82, 20.06, 19.95, 11.29, 7.06, 7.04, 4.31, 4.22, 2.44],
+    seatingOrder: ['VAS','VIHR','SDP','KESK','SFP','LIIK','KOK','KD','PS'],
+    hemiPair: ['Left bloc','Right bloc'],
+    notes: [
+      { l:'Seat model', t:'D\u2019Hondt over 200 seats. Finland has no legal threshold — small-party seats come from district maths, which a national D\u2019Hondt approximates closely (it reproduces the published seat projections).' },
+      { l:'Åland', t:'The single Åland seat is its own constituency and is not modelled, so the current-chamber view shows 199 of the 200 seats.' },
+      { l:'Current chamber', t:'The 2 Apr 2023 election result.' },
+      { l:'Government', t:'A solid ring marks the Orpo cabinet (KOK, PS, SFP, KD), a centre-right coalition. The left bloc and the Centre Party sit in opposition.' },
+      { l:'Sources', t:'<a href="https://en.wikipedia.org/wiki/Opinion_polling_for_the_2027_Finnish_parliamentary_election">Wikipedia</a> (Taloustutkimus, Verian), cross-checked against <a href="https://politpro.eu/en/finland">PolitPro</a> and <a href="https://europeelects.eu/finland/">EuropeElects</a>.' },
+    ],
+    parties: [
+      { key:'SDP',  name:'SDP', full:'Social Democrats', color:'#E11931', leader:'Antti Lindtman', gov:null, ideo:[['Social democracy',80],['Social liberalism',45]] },
+      { key:'KOK',  name:'Kokoomus', full:'National Coalition', color:'#0091D4', leader:'Petteri Orpo (PM)', gov:'coalition', ideo:[['Fiscal conservatism',60],['Neoliberalism',55]] },
+      { key:'KESK', name:'Keskusta', full:'Centre Party', color:'#007C3E', leader:'Antti Kaikkonen', gov:null, ideo:[['Centrism',70],['Regionalism/Agrarianism',50]] },
+      { key:'PS',   name:'Perussuomalaiset', full:'Finns Party', color:'#14387F', leader:'Riikka Purra', gov:'coalition', ideo:[['Right-populism',75],['National conservatism',65]] },
+      { key:'VAS',  name:'Vasemmistoliitto', full:'Left Alliance', color:'#E5007D', leader:'Minja Koskela', gov:null, ideo:[['Dem. socialism/Left-populism',70],['Marxism',40]] },
+      { key:'VIHR', name:'Vihreät', full:'Green League', color:'#8DC63F', leader:'Sofia Virta', gov:null, ideo:[['Environmentalism',80],['Modern liberalism',55]] },
+      { key:'SFP',  name:'RKP · Svenska folkpartiet', full:'Swedish People\u2019s Party', color:'#FFC20E', leader:'Anders Adlercreutz', gov:'coalition', ideo:[['Liberalism/Libertarianism',60],['Modern liberalism',50]] },
+      { key:'KD',   name:'Kristillisdemokraatit', full:'Christian Democrats', color:'#E87722', leader:'Sari Essayah', gov:'coalition', ideo:[['Social conservatism',75],['Fiscal conservatism',45]] },
+      { key:'LIIK', name:'Liike Nyt', full:'Movement Now', color:'#00A6A6', leader:'Harry Harkimo', gov:null, ideo:[['Modern liberalism',55],['Liberalism/Libertarianism',45]] },
+    ],
+    currentSeats: { KOK:48, PS:46, SDP:43, KESK:23, VIHR:13, VAS:11, SFP:9, KD:5, LIIK:1 },
+    electionSeats: { KOK:48, PS:46, SDP:43, KESK:23, VIHR:13, VAS:11, SFP:9, KD:5, LIIK:1 },
+    blocs: [
+      { label:'Left bloc', keys:['VAS','VIHR','SDP','KESK'] },
+      { label:'Centre Left bloc', keys:['VIHR','SDP','KESK','SFP'] },
+      { label:'Right bloc', keys:['SFP','KOK','KD','PS'] },
+    ],
+    polls: [
+      ['Verian','2025-07-14',19.8,10.6,25.4,15.7,9.8,8,4.1,3.3,1.2],
+      ['Verian','2025-08-17',18.8,11,25.2,16.3,10,8.3,4,3.2,1.2],
+      ['Verian','2025-09-14',18.4,11.4,25.3,16.1,9.7,8.6,4,3.1,1.3],
+      ['Verian','2025-10-12',18.2,12.8,24.8,15.7,9.4,8.8,3.8,3,1.5],
+      ['Taloustutkimus','2025-11-04',19,14.6,25.4,13.8,9.5,7.3,3.9,3.5,1.3],
+      ['Verian','2025-12-14',18,13.1,25.3,14.8,9.5,8.6,4,3,1.7],
+      ['Verian','2026-01-19',18.4,13.4,25,14.3,10,8.3,4,3,1.5],
+      ['Taloustutkimus','2026-02-03',18.8,13.3,25,14.3,11.1,7.9,3.8,3.4,1],
+      ['Verian','2026-02-16',17.9,13,25.1,14.1,10.4,8.5,4,3.3,1.7],
+      ['Taloustutkimus','2026-03-03',17.9,14.9,25,13.2,11,8.2,3.4,3.3,1],
+      ['Verian','2026-03-16',17.8,13.4,24.8,13.7,10.4,8.9,4,3.2,1.8],
+      ['Taloustutkimus','2026-04-07',17.4,13.5,24.1,14.5,11.3,8.7,3.8,3.2,1],
+      ['Verian','2026-04-20',17.6,13.3,24.6,13.7,10.6,9.2,4,3.1,1.9],
+      ['Taloustutkimus','2026-05-05',17.6,13.9,23.7,14.2,10.9,9.1,3.2,4,1.7],
+      ['Verian','2026-05-18',17.3,13.4,24.3,13.6,11,9.1,3.8,3.3,2],
+      ['Taloustutkimus','2026-06-01',18.3,13.8,23,14.1,11.2,8.3,3.9,3.4,1.7],
+    ],
+  },
+
+  germany: {
+    flag: '🇩🇪', name: 'Germany', year: 2026,
+    chamber: 'Bundestag', totalSeats: 630, majority: 316, threshold: 5,
+    seatMethod: 'sainteLague', firstDivisor: 1.0,
+    electionLine: 'Next election by Mar 2029 · 630 seats · 5% threshold · 316 for a majority',
+    updated: 'Last updated: <b>2 June 2026</b> (latest polls · GMS, INSA) · the <b>AfD</b> now leads nationally; the CDU/CSU\u2013SPD grand coalition has lost its majority',
+    showThresholdLine: true, trendMax: 32,
+    pollKeys: ['CDU','AfD','SPD','Grüne','Linke','FDP','BSW'],
+    electionDate: '2025-02-23', electionLabel: '23 Feb 2025 election',
+    electionResult: [28.5, 20.8, 16.4, 11.6, 8.8, 4.3, 5.0],
+    seatingOrder: ['Linke','BSW','SPD','Grüne','FDP','CDU','AfD'],
+    hemiPair: ['Left bloc','Right bloc'],
+    notes: [
+      { l:'Seat model', t:'Pure Sainte-Laguë over 630 seats, 5% threshold — Germany\u2019s Bundestag method since the 2023 reform capped the house at 630 and abolished overhang seats.' },
+      { l:'Threshold', t:'FDP and BSW sit just below 5% and so win no seats here — exactly what befell both in 2025.' },
+      { l:'SSW', t:'The Danish-minority SSW is exempt from the 5% threshold and holds 1 seat, but isn\u2019t polled nationally or modelled, so the current chamber shows 629 of 630.' },
+      { l:'Current chamber', t:'The 23 Feb 2025 snap-election result.' },
+      { l:'Government', t:'A solid ring marks the Merz grand coalition (CDU/CSU + SPD). The AfD is the largest opposition party, but every other party upholds a \u201cfirewall\u201d (Brandmauer) against governing with it — so a right-bloc majority on paper isn\u2019t a workable one.' },
+      { l:'Sources', t:'<a href="https://en.wikipedia.org/wiki/Opinion_polling_for_the_next_German_federal_election">Wikipedia</a> (INSA, Forsa, GMS, Infratest dimap, FGW, Verian), cross-checked against <a href="https://politpro.eu/en/germany">PolitPro</a> and <a href="https://europeelects.eu/germany/">EuropeElects</a>.' },
+    ],
+    parties: [
+      { key:'CDU',  name:'CDU/CSU', full:'Christian Democratic Union', color:'#1A1A1A', leader:'Friedrich Merz (Chancellor)', gov:'coalition', ideo:[['Fiscal conservatism',60],['Social conservatism',50]] },
+      { key:'AfD',  name:'AfD', full:'Alternative for Germany', color:'#009EE0', leader:'Alice Weidel', gov:null, ideo:[['National conservatism',85],['Right-populism',80]] },
+      { key:'SPD',  name:'SPD', full:'Social Democratic Party', color:'#E3000F', leader:'Lars Klingbeil', gov:'coalition', ideo:[['Social democracy',75],['Social liberalism',45]] },
+      { key:'Grüne', name:'Grüne', full:'Alliance 90/The Greens', color:'#46962B', leader:'Felix Banaszak', gov:null, ideo:[['Environmentalism',80],['Modern liberalism',55]] },
+      { key:'Linke', name:'Die Linke', full:'The Left', color:'#BE3075', leader:'Jan van Aken', gov:null, ideo:[['Dem. socialism/Left-populism',70],['Marxism',50]] },
+      { key:'FDP',  name:'FDP', full:'Free Democratic Party', color:'#FFD600', leader:'Christian Dürr', gov:null, ideo:[['Neoliberalism',65],['Liberalism/Libertarianism',50]] },
+      { key:'BSW',  name:'BSW', full:'Sahra Wagenknecht Alliance', color:'#C45911', leader:'Sahra Wagenknecht', gov:null, ideo:[['Marxism',70],['Social conservatism',60]] },
+    ],
+    currentSeats: { CDU:208, AfD:152, SPD:120, 'Grüne':85, Linke:64, FDP:0, BSW:0 },
+    electionSeats: { CDU:208, AfD:152, SPD:120, 'Grüne':85, Linke:64, FDP:0, BSW:0 },
+    blocs: [
+      { label:'Left bloc', keys:['SPD','Grüne','Linke'] },
+      { label:'Right bloc', keys:['CDU','AfD','FDP'] },
+      { label:'Red-black (CDU+SPD)', keys:['CDU','SPD'] },
+      { label:'Kenya (SPD+Grüne+CDU)', keys:['SPD','Grüne','CDU'] },
+      { label:'Jamaica (Grüne+FDP+CDU)', keys:['Grüne','FDP','CDU'] },
+    ],
+    polls: [
+      ['Infratest','2025-07-02',30,23,13,12,10,3,4],
+      ['FGW','2025-07-24',27,24,15,11,11,3,3],
+      ['FGW','2025-08-13',27,23,15,12,11,3,3],
+      ['FGW','2025-09-04',27,25,15,11,10,3,3],
+      ['Infratest','2025-10-01',26,26,14,12,10,3,3],
+      ['Infratest','2025-11-05',27,26,14,12,10,3,3],
+      ['Infratest','2025-12-03',27,25,14,12,10,3,4],
+      ['INSA','2025-12-22',24.5,26,14,11.5,11,3.5,4],
+      ['GMS','2026-01-05',24,27,15,12,10,3,4],
+      ['INSA','2026-03-13',25,25,15,12,11,3,3],
+      ['YouGov','2026-03-16',26,26,14,13,9,3,3],
+      ['Ipsos','2026-03-29',24,25,14,14,11,5,3],
+      ['INSA','2026-03-30',26,26,14.5,12,10.5,3,3.5],
+      ['Verian','2026-04-07',25,25,14,14,11,3,3],
+      ['INSA','2026-04-10',25,26,14,13,10,3,4],
+      ['YouGov','2026-04-13',23,27,13,14,10,4,4],
+      ['INSA','2026-04-20',24,26.5,14,12.5,11,3.5,3.5],
+      ['INSA','2026-04-27',23.5,28,14,12.5,11,3.5,3.5],
+      ['Verian','2026-05-05',24,25,13,15,10,4,3],
+      ['Infratest dimap','2026-05-06',24,27,12,15,10,4,3],
+      ['YouGov','2026-05-21',24,26,12,15,12,3,3],
+      ['Forschungsgr. Wahlen','2026-05-22',22,27,12,15,11,4,3],
+      ['INSA','2026-05-26',22,29,12,14,10.5,4,3],
+      ['Forsa','2026-05-29',22,29,12,14,11,3,3],
+      ['INSA','2026-06-01',22,29,12,13.5,10.5,3.5,3.5],
+      ['GMS','2026-06-01',23,27,11,16,11,5,2],
+    ],
+  },
+
+  poland: {
+    flag: '🇵🇱', name: 'Poland', year: 2026,
+    chamber: 'Sejm', totalSeats: 460, majority: 231, threshold: 5,
+    seatMethod: 'dhondt',
+    electionLine: 'Next election by Nov 2027 · 460 seats · 5% threshold (8% for coalitions) · 231 for a majority',
+    updated: 'Last updated: <b>30 April 2026</b> (latest poll · Opinia24) · KO leads, but the Third Way\u2019s collapse below the threshold has cost the Tusk coalition its majority; cohabitation with PiS-backed President Nawrocki continues',
+    showThresholdLine: true, trendMax: 40,
+    pollKeys: ['KO','PiS','Konf','KKP','Lewica','Razem','PSL','PL2050'],
+    electionDate: '2023-10-15', electionLabel: '15 Oct 2023 election',
+    electionResult: [30.70, 35.38, 7.16, 0, 8.61, 0, 7.20, 7.20],
+    seatingOrder: ['Razem','Lewica','KO','PL2050','PSL','PiS','Konf','KKP'],
+    hemiPair: ['KO-led bloc','PiS-led right'],
+    notes: [
+      { l:'Seat model', t:'<b>Simplified national D\u2019Hondt</b> over 460 seats, 5% threshold (8% for coalitions). Poland\u2019s real system runs D\u2019Hondt inside 41 districts, which hands the largest parties a sizeable bonus — so district-level projections (ewybory.eu, DawidStats) put KO and PiS higher, and the mid-size parties lower, than the figures here. Treat this as a proportional baseline, not a district forecast.' },
+      { l:'Threshold', t:'Razem, PSL and Polska 2050 currently poll below 5% and win no seats here — the collapse of the old Third Way (PSL + Polska 2050).' },
+      { l:'Current chamber', t:'The 15 Oct 2023 result mapped onto today\u2019s parties: the Third Way\u2019s 65 seats split into PSL (32) and Polska 2050 (33); KKP (Braun\u2019s 2025 splinter) and Razem (which left the Lewica bloc) start from zero.' },
+      { l:'Government', t:'A solid ring marks the Tusk coalition (KO, Polska 2050, PSL, Lewica), governing in cohabitation with PiS-backed President Karol Nawrocki, elected in 2025.' },
+      { l:'Sources', t:'<a href="https://en.wikipedia.org/wiki/Opinion_polling_for_the_next_Polish_parliamentary_election">Wikipedia</a> (IBRiS, Opinia24, United Surveys, CBOS), cross-checked against <a href="https://politpro.eu/en/poland">PolitPro</a> and <a href="https://europeelects.eu/poland/">EuropeElects</a>.' },
+    ],
+    parties: [
+      { key:'KO',     name:'KO', full:'Civic Coalition', color:'#F77F00', leader:'Donald Tusk (PM)', gov:'coalition', ideo:[['Modern liberalism',60],['Neoliberalism',50]] },
+      { key:'PiS',    name:'PiS', full:'Law and Justice', color:'#15397F', leader:'Jarosław Kaczyński', gov:null, ideo:[['Social conservatism',80],['National conservatism',30]] },
+      { key:'Konf',   name:'Konfederacja', full:'Confederation', color:'#1A1A1A', leader:'Bosak & Mentzen', gov:null, ideo:[['National conservatism',80],['Right-populism',80]] },
+      { key:'KKP',    name:'KKP', full:'Confederation of the Polish Crown', color:'#6B2737', leader:'Grzegorz Braun', gov:null, ideo:[['National conservatism',100],['Social conservatism',90]] },
+      { key:'Lewica', name:'Lewica', full:'The Left', color:'#E4002B', leader:'Czarzasty & Biedroń', gov:'coalition', ideo:[['Social democracy',70],['Social liberalism',55]] },
+      { key:'Razem',  name:'Razem', full:'Together', color:'#B5179E', leader:'Adrian Zandberg', gov:null, ideo:[['Social democracy',80],['Dem. socialism/Left-populism',50]] },
+      { key:'PSL',    name:'PSL', full:'Polish People\u2019s Party', color:'#2E7D32', leader:'Władysław Kosiniak-Kamysz', gov:'coalition', ideo:[['Regionalism/Agrarianism',60],['Social conservatism',40]] },
+      { key:'PL2050', name:'Polska 2050', full:'Poland 2050', color:'#F5C518', leader:'Katarzyna Pełczyńska-Nałęcz', gov:'coalition', ideo:[['Liberalism/Libertarianism',60],['Social conservatism',50]] },
+    ],
+    currentSeats: { KO:157, PiS:194, Konf:18, KKP:0, Lewica:26, Razem:0, PSL:32, PL2050:33 },
+    electionSeats: { KO:157, PiS:194, Konf:18, KKP:0, Lewica:26, Razem:0, PSL:32, PL2050:33 },
+    blocs: [
+      { label:'KO-led bloc', keys:['KO','PL2050','PSL','Lewica','Razem'] },
+      { label:'PiS-led right', keys:['PiS','Konf','KKP'] },
+    ],
+    polls: [
+      ['IBRiS/Onet','2025-06-24',25.8,30.5,16.8,5.1,6.1,3.9,4,4.6],
+      ['IBRiS/Rz','2025-07-25',30.1,28.7,14.6,4.6,7.1,3.1,3.6,2.8],
+      ['CBOS','2025-08-21',30,30,12,3,7,5,1,2],
+      ['United Surveys','2025-09-13',32.3,30.7,13.8,4.5,6.8,1.2,3.8,1],
+      ['United Surveys','2025-10-26',30.8,26.7,11.9,6.4,6.9,3.4,4.8,1.5],
+      ['IBRiS/Onet','2025-11-15',31.5,27.6,14.1,7.3,7,3.6,3.9,0.7],
+      ['United Surveys','2025-12-08',32.8,26.7,13.1,8.4,7.1,2.8,3.1,1],
+      ['United Surveys','2025-12-21',31.5,25.1,12.1,8.1,7.2,2.4,4.9,1],
+      ['IBRiS','2026-01-31',31.4,23.3,12.6,9,8.1,3.6,5.4,1.7],
+      ['Opinia24','2026-02-04',32,24.5,12.6,7.7,6.3,3.7,1.7,4.1],
+      ['United Surveys','2026-02-21',30.7,21.5,13.2,10,7.5,2.5,5,1],
+      ['IBRiS','2026-02-28',30.1,22.1,13.8,9.2,6.8,3.4,4.2,1.5],
+      ['Opinia24','2026-03-04',34.2,22,14.5,7.2,6.1,4.1,3,1.6],
+      ['IBRiS','2026-03-15',31.1,24.7,13.6,8.2,6.1,3.2,4.8,1.4],
+      ['IBRiS','2026-03-28',32.4,24.5,13.4,7.5,7.9,2.9,4.5,1.8],
+      ['Opinia24','2026-04-09',35.2,22,12.8,6.6,6.9,4.6,1.9,3.1],
+      ['IBRiS','2026-04-13',32.1,23.8,15,8.2,7.1,3.1,4.2,1.2],
+      ['CBOS','2026-04-15',32,18.2,13,8.7,5.8,4.9,3,0.7],
+      ['United Surveys','2026-04-26',31.8,24.5,12.6,6.8,8.5,3.8,4.6,1.1],
+      ['Opinia24','2026-04-30',34.3,23.5,13.2,8.9,7.6,3.8,3,2.4],
+    ],
+  },
+
+  spain: {
+    flag: '🇪🇸', name: 'Spain', year: 2026,
+    chamber: 'Congreso de los Diputados (lower house)',
+    totalSeats: 350, majority: 176, threshold: 0, seatMethod: 'dhondt',
+    electionLine: 'Next election by Aug 2027 · 350 seats · 3% per-constituency threshold · 176 for a majority',
+    updated: 'Last updated: June 2026', showThresholdLine: false, trendMax: 40,
+    pollKeys: ['PP','PSOE','Vox','Sumar','Podemos','ERC','Junts','Bildu','PNV','BNG','CC','UPN'],
+    electionDate: '2023-07-23', electionLabel: '23 Jul 2023 election',
+    electionResult: [33.06, 31.70, 12.39, 12.31, 0, 1.90, 1.60, 1.36, 1.14, 0.88, 0.32, 0.20],
+    seatingOrder: ['Podemos','Sumar','BNG','ERC','Bildu','PSOE','PNV','CC','Junts','UPN','PP','Vox','SALF'],
+    hemiPair: ['Left & investiture bloc','PP–Vox right'],
+    parties: [
+      { key:'PP',     name:'Partido Popular', full:"People's Party", color:'#1E6FB8', leader:'Alberto Núñez Feijóo', gov:null, ideo:[['Fiscal conservatism',60],['Social conservatism',50]] },
+      { key:'PSOE',   name:'PSOE', full:"Spanish Socialist Workers' Party", color:'#E30613', leader:'Pedro Sánchez (PM)', gov:'coalition', ideo:[['Social democracy',80],['Environmentalism',50]] },
+      { key:'Vox',    name:'Vox', full:'Vox', color:'#63BE21', leader:'Santiago Abascal', gov:null, ideo:[['Right-populism',75],['National conservatism',75]] },
+      { key:'Sumar',  name:'Sumar', full:'Unite', color:'#E6007E', leader:'Yolanda Díaz', gov:'coalition', ideo:[['Dem. socialism/Left-populism',60],['Environmentalism',45]] },
+      { key:'Podemos',name:'Podemos', full:'We Can', color:'#6A2E68', leader:'Ione Belarra', gov:null, ideo:[['Dem. socialism/Left-populism',80],['Environmentalism',30]] },
+      { key:'ERC',    name:'Esquerra Republicana', full:'Republican Left of Catalonia', color:'#F4B223', leader:'Oriol Junqueras', gov:'support', ideo:[['Regionalism/Agrarianism',70],['Social democracy',60]] },
+      { key:'Junts',  name:'Junts per Catalunya', full:'Together for Catalonia', color:'#00C4B3', leader:'Carles Puigdemont', gov:null, ideo:[['Regionalism/Agrarianism',70],['Neoliberalism',40]] },
+      { key:'Bildu',  name:'EH Bildu', full:'Basque Country Unite', color:'#A6CE39', leader:'Arnaldo Otegi', gov:'support', ideo:[['Dem. socialism/Left-populism',70],['Regionalism/Agrarianism',60]] },
+      { key:'PNV',    name:'EAJ-PNV', full:'Basque Nationalist Party', color:'#1B7340', leader:'Aitor Esteban', gov:'support', ideo:[['Regionalism/Agrarianism',70],['Social conservatism',50]] },
+      { key:'BNG',    name:'BNG', full:'Galician Nationalist Bloc', color:'#76C3E8', leader:'Néstor Rego', gov:'support', ideo:[['Dem. socialism/Left-populism',55],['Regionalism/Agrarianism',70]] },
+      { key:'CC',     name:'Coalición Canaria', full:'Canarian Coalition', color:'#2AA198', leader:'Fernando Clavijo', gov:null, ideo:[['Centrism',55],['Regionalism/Agrarianism',70]] },
+      { key:'UPN',    name:'UPN', full:"Navarrese People's Union", color:'#0B3D91', leader:'Javier Esparza', gov:null, ideo:[['Neoliberalism',60],['Regionalism/Agrarianism',55]] },
+      { key:'SALF',   name:'Se Acabó La Fiesta', full:'The Party Is Over', color:'#1A1A1A', leader:'Alvise Pérez', gov:null, newcomer:true, newcomerReading:1.9, newcomerSource:'PolitPro trend, Jun 2026 (≈2%, no Congress seats)', ideo:[['Right-populism',80],['National conservatism',70]] },
+    ],
+    currentSeats: { PP:137, PSOE:121, Vox:33, Sumar:26, Podemos:5, ERC:7, Junts:7, Bildu:6, PNV:5, BNG:1, CC:1, UPN:1 },
+    electionSeats: { PP:137, PSOE:121, Vox:33, Sumar:31, Podemos:0, ERC:7, Junts:7, Bildu:6, PNV:5, BNG:1, CC:1, UPN:1 },
+    blocs: [
+      { label:'Left & investiture bloc', keys:['PSOE','Sumar','Podemos','ERC','Bildu','PNV','BNG'] },
+      { label:'PP–Vox right', keys:['PP','Vox','UPN'] },
+      { label:'Regional bloc', keys:['BNG','ERC','Bildu','PNV','Junts'] },
+      { label:'Left-national bloc', keys:['Podemos','Sumar','PSOE'] },
+    ],
+    notes: [
+      { l:'Seat model', t:'<b>Simplified national D\\u2019Hondt</b> over 350 seats, no national threshold applied. Spain\\u2019s real system runs D\\u2019Hondt inside 52 provincial constituencies with a 3% per-constituency threshold — which hands the largest parties a majoritarian bonus and lets geographically-concentrated regional parties (ERC, Junts, EH Bildu, PNV, BNG) win seats on low national shares. Treat this as a proportional baseline, not a seat forecast.' },
+      { l:'Current chamber', t:'The 23 Jul 2023 result. Sumar\\u2019s 31 seats then included Podemos, whose five MPs left the group in Dec 2023 and now poll separately (shown at 0 historic seats here).' },
+      { l:'Government', t:'A solid ring marks the PSOE–Sumar minority coalition under Pedro Sánchez; dashed rings mark its investiture partners (ERC, EH Bildu, PNV, BNG). Junts withdrew its confidence in 2025.' },
+      { l:'Newcomer', t:'<b>SALF</b> (Se Acabó La Fiesta, Alvise Pérez) holds EU-Parliament seats only; it polls ~2% for the Congreso and is shown at its latest reading, outside the average.' },
+      { l:'Sources', t:'<a href="https://politpro.eu/en/spain/opinion-polls">PolitPro</a> (EM-Analytics, SocioMétrica, GAD3, Sigma Dos, Ipsos), cross-checked against <a href="https://en.wikipedia.org/wiki/Opinion_polling_for_the_next_Spanish_general_election">Wikipedia</a> and <a href="https://europeelects.eu/spain/">EuropeElects</a>.' },
+    ],
+    polls: [
+      ['SocioMétrica','2025-08-29',34.5,26.2,16.1,6.9,1.6,1.6,1.5,1.3,1,0.3,0.2,0.2],
+      ['Celeste-Tel','2025-09-12',34.9,26.1,15.2,6.9,1.7,1.6,1.4,1.2,0.8,0.5,0.2,0.2],
+      ['SocioMétrica','2025-10-10',34,26.9,16.6,6.2,1.9,1.7,1.4,1,0.8,0.3,0.2,0.2],
+      ['Opina 360','2025-11-04',28.2,28.1,19.5,6.9,3.1,1.9,1.6,1.1,1,0.5,0.3,0.2],
+      ['EM-Analytics','2025-11-21',32.1,29.3,18.8,5.6,1.9,1.5,1.4,1.3,1.1,0.4,0.2,0.2],
+      ['SocioMétrica','2025-12-07',33.4,26.2,17.4,7,2,1.2,1.4,1,0.9,0.4,0.2,0.2],
+      ['SocioMétrica','2026-01-10',32.5,25.7,17.9,6.5,2.1,1.3,1.5,0.9,1.1,0.5,0.2,0.2],
+      ['NC Report','2026-02-13',33.1,25.9,18.1,6,1.8,1.5,1.4,1,0.8,0.4,0.2,0.2],
+      ['EM-Analytics','2026-02-27',32,26.5,20.1,5.7,1.9,1.4,1.3,1.1,0.9,0.4,0.2,0.2],
+      ['Ipsos','2026-04-08',30.9,28.4,18.3,5.8,1.8,2.2,1.4,1.9,1.2,0.8,0.5,0.1],
+      ['NC Report','2026-05-27',34.7,25.1,17.9,6.3,3.6,1.9,1.6,1.4,1,0.8,0.4,0.2],
+      ['GAD3','2026-05-28',33.1,26.8,17.1,5.9,3.1,2,1.6,1.4,1,0.8,0.5,0.1],
+      ['SocioMétrica','2026-05-30',33.9,25.9,17.4,5.7,2.2,2.1,1.2,1.5,1,0.8,0.5,0.2],
+      ['Sigma Dos','2026-06-11',32.6,26.4,17.2,7,3.4,2,0.8,1,0.9,0.8,0.5,0.2],
+      ['EM-Analytics','2026-06-12',32.8,27.7,18.2,5.9,3.6,1.9,1.5,1.4,1.2,0.9,0.4,0.2],
+    ],
+  },
+
+  italy: {
+    flag: '🇮🇹', name: 'Italy', year: 2026,
+    chamber: 'Camera dei Deputati', totalSeats: 400, majority: 201, threshold: 3,
+    seatMethod: 'dhondt', showThresholdLine: true, trendMax: 35,
+    electionLine: 'Last: 25 Sep 2022 — Meloni\\u2019s centre-right coalition won a Chamber majority. Next due by Dec 2027.',
+    updated: 'Last updated: 16 Jun 2026',
+    pollKeys: ['FdI','PD','M5S','FI','AVS','Lega','A','IV','+E','NM'],
+    electionDate: '2022-09-25', electionLabel: '25 Sep 2022 election',
+    electionResult: [26.0, 19.1, 15.4, 8.1, 3.6, 8.8, 4.5, 3.3, 2.8, 0.9],
+    seatingOrder: ['AVS','M5S','PD','+E','IV','A','NM','FI','Lega','FdI','FN'],
+    hemiPair: ['Opposition', 'Right-wing government'],
+    parties: [
+      { key:'FdI',  name:'FdI', full:'Brothers of Italy', color:'#1C2B4A', leader:'Giorgia Meloni (PM)', gov:'coalition', ideo:[['Social conservatism',80],['Right-populism',50]] },
+      { key:'PD',   name:'PD', full:'Democratic Party', color:'#E63329', leader:'Elly Schlein', gov:null, ideo:[['Social democracy',70],['Environmentalism',40]] },
+      { key:'M5S',  name:'M5S', full:'Five Star Movement', color:'#E0B200', leader:'Giuseppe Conte', gov:null, ideo:[['Dem. socialism/Left-populism',40],['Environmentalism',30]] },
+      { key:'FI',   name:'FI', full:'Forza Italia', color:'#0F7FCF', leader:'Antonio Tajani', gov:'coalition', ideo:[['Fiscal conservatism',50],['Social conservatism',40]] },
+      { key:'AVS',  name:'AVS', full:'Greens and Left Alliance', color:'#7CB342', leader:'Bonelli &amp; Fratoianni', gov:null, ideo:[['Dem. socialism/Left-populism',70],['Environmentalism',60]] },
+      { key:'Lega', name:'Lega', full:'League', color:'#13692F', leader:'Matteo Salvini', gov:'coalition', ideo:[['Right-populism',70],['National conservatism',50]] },
+      { key:'A',    name:'A', full:'Action', color:'#00A3B5', leader:'Carlo Calenda', gov:null, ideo:[['Liberalism/Libertarianism',60],['Centrism',55]] },
+      { key:'IV',   name:'IV', full:'Italy Alive', color:'#EE3D8F', leader:'Matteo Renzi', gov:null, ideo:[['Liberalism/Libertarianism',55],['Centrism',55]] },
+      { key:'+E',   name:'+E', full:'More Europe', color:'#8E44AD', leader:'Riccardo Magi', gov:null, ideo:[['Liberalism/Libertarianism',60],['Modern liberalism',75]] },
+      { key:'NM',   name:'NM', full:'Us Moderates', color:'#5DADE2', leader:'Maurizio Lupi', gov:'coalition', ideo:[['Social conservatism',50],['Neoliberalism',40]] },
+      { key:'FN',   name:'FN', full:'National Future', color:'#2C3E50', leader:'Roberto Vannacci', gov:null, newcomer:true, newcomerReading:5.0, newcomerSource:'SWG/La7, Jun 2026 (founded Feb 2026)', ideo:[['National conservatism',85],['Right-populism',75]] },
+    ],
+    currentSeats: { FdI:120, PD:70, M5S:52, FI:45, AVS:12, Lega:64, A:11, IV:10, '+E':3, NM:9, FN:4 },
+    electionSeats: { FdI:120, PD:70, M5S:52, FI:45, AVS:12, Lega:68, A:11, IV:10, '+E':3, NM:9, FN:0 },
+    blocs: [
+      { label:'Right-wing government', keys:['NM','FI','Lega','FdI'] },
+      { label:'Opposition', keys:['PD','M5S','AVS','+E','IV','A'] },
+      { label:'Left bloc', keys:['AVS','M5S','PD'] },
+      { label:'Centrist bloc', keys:['+E','IV','A','NM'] },
+      { label:'Far-right alliance', keys:['Lega','FdI','FN'] },
+    ],
+    notes: [
+      { l:'Seat model', t:'<b>Simplified national D\\u2019Hondt</b> over 400 seats, 3% threshold. Italy\\u2019s real system is the <b>Rosatellum</b> mixed-member law — roughly 37% single-member FPTP and 63% proportional — which hands the winning coalition a sizeable seat bonus. In 2022 Meloni\\u2019s coalition turned ~44% of the vote into ~59% of seats. Treat this as a proportional baseline, not a seat forecast.' },
+      { l:'Newcomer', t:'<b>FN</b> (Futuro Nazionale, Gen. Roberto Vannacci) split from the Lega in February 2026 and polls ~5%. It is shown at its latest reading in the \\u201cLatest poll\\u201d view but excluded from the weighted averages (too little history) and from the 2022 result.' },
+      { l:'Third Pole', t:'In 2022, Azione and Italia Viva ran as a single \\u201cThird Pole\\u201d list (7.8%); the Last election tab splits this between A and IV.' },
+      { l:'Current chamber', t:'The 2022 Chamber result with later group changes approximated (including FN\\u2019s four defector seats); linguistic-minority and mixed-group members are folded into the nearest party.' },
+      { l:'Government', t:'A solid ring marks Meloni\\u2019s centre-right cabinet (FdI, FI, Lega, NM).' },
+      { l:'Sources', t:'<a href="https://en.wikipedia.org/wiki/Opinion_polling_for_the_next_Italian_general_election">Wikipedia</a> (SWG, Tecnè, Ipsos, EMG, YouTrend), cross-checked against <a href="https://politpro.eu/en/italy">PolitPro</a> and <a href="https://europeelects.eu/italy/">EuropeElects</a>.' },
+    ],
+    polls: [
+      ['BiDiMedia','2025-08-28',28.8,22.5,12.9,8.3,7,8.6,2.6,1.5,1.3,0.9],
+      ['SWG','2025-10-20',31,22.1,13.2,7.9,6.6,8.5,2.9,2.3,1.8,1],
+      ['SWG','2025-11-17',31.4,22,12.8,8,6.9,7.8,3.2,2.5,1.5,1.3],
+      ['YouTrend','2025-12-05',27.8,22.1,13.4,7.6,7.7,7.8,3.9,1.9,2.8,0.8],
+      ['Ipsos','2025-12-18',28.4,21.3,13.5,8.3,6.1,8.1,3.1,2.5,1.6,1],
+      ['SWG','2026-01-19',31.1,22.4,12.4,8.4,6.4,8,2.8,2,1.3,1.2],
+      ['YouTrend','2026-02-09',28.9,21.2,11.8,9.5,7,6.2,4,2.2,1.9,1],
+      ['SWG','2026-02-23',29.8,21.9,11.5,8.3,6.7,6.6,3.5,2.2,1.4,1.1],
+      ['SWG','2026-03-16',29.4,21.7,12.3,8,6.6,6.6,3.5,2.3,1.5,1.1],
+      ['SWG','2026-03-30',29.5,22,12.3,7.9,6.6,6.6,3.4,2.3,1.4,1.1],
+      ['SWG','2026-05-25',28.1,22.5,12.7,7.4,6.6,6,3.5,2.5,1.4,1.3],
+      ['EMG','2026-05-26',26.4,21.4,13,9,6.8,8.1,2.4,2.5,1.5,1.6],
+      ['Termometro P.','2026-05-27',28.1,22,12.7,7.9,6,6.8,2.9,2.5,1.8,1.1],
+      ['YouTrend','2026-05-27',27.7,21.7,13.5,7.8,6.4,5.9,3.2,2.2,1.1,1],
+      ['Ipsos','2026-05-28',27.6,20.1,14.5,8.2,6.8,5.7,3.1,2,1.5,0.8],
+      ['Tecnè','2026-05-29',29.4,22.1,12.4,8.8,6.3,7,2.8,2.4,1.4,0.9],
+      ['SWG','2026-06-01',28.2,22.3,13,7.2,6.7,5.8,3.4,2.4,1.4,1.2],
+      ['EMG','2026-06-09',26.7,20.8,12.9,8.2,6.4,8.1,2.5,2.3,1.9,1.6],
+    ],
+  },
+
+  portugal: {
+    flag: '🇵🇹', name: 'Portugal', year: 2026,
+    chamber: 'Assembleia da República', totalSeats: 230, majority: 116, threshold: 0,
+    seatMethod: 'dhondt', showThresholdLine: false, trendMax: 40,
+    electionLine: 'Last: 18 May 2025 (snap) — AD won a minority; Chega edged PS for second. Next due 2029.',
+    updated: 'Last updated: 16 Jun 2026',
+    pollKeys: ['PS','AD','Chega','IL','Livre','CDU','BE','PAN'],
+    electionDate: '2025-05-18', electionLabel: '18 May 2025 election',
+    electionResult: [22.83, 31.78, 22.76, 5.36, 4.07, 2.91, 1.99, 1.38],
+    seatingOrder: ['CDU','BE','Livre','PS','PAN','JPP','AD','IL','Chega'],
+    hemiPair: ['Left &amp; centre-left', 'Right &amp; centre-right'],
+    parties: [
+      { key:'PS',    name:'PS', full:'Socialist Party', color:'#EB5D7E', leader:'José Luís Carneiro', gov:null, ideo:[['Social democracy',70],['Social liberalism',45]] },
+      { key:'AD',    name:'AD', full:'Democratic Alliance', color:'#FF8000', leader:'Luís Montenegro (PM)', gov:'coalition', ideo:[['Neoliberalism',60],['Social conservatism',40]] },
+      { key:'Chega', name:'Chega', full:'Enough', color:'#1B2A6B', leader:'André Ventura', gov:null, ideo:[['Right-populism',85],['National conservatism',70]] },
+      { key:'IL',    name:'IL', full:'Liberal Initiative', color:'#26C6DA', leader:'Mariana Leitão', gov:null, ideo:[['Liberalism/Libertarianism',60],['Neoliberalism',50]] },
+      { key:'Livre', name:'Livre', full:'Free', color:'#5AB552', leader:'Rui Tavares', gov:null, ideo:[['Environmentalism',75],['Dem. socialism/Left-populism',45]] },
+      { key:'CDU',   name:'CDU', full:'Unitary Democratic Coalition', color:'#C00000', leader:'Paulo Raimundo', gov:null, ideo:[['Marxism',80],['Dem. socialism/Left-populism',60]] },
+      { key:'BE',    name:'BE', full:'Left Bloc', color:'#7B1E3A', leader:'Mariana Mortágua', gov:null, ideo:[['Dem. socialism/Left-populism',70],['Environmentalism',60]] },
+      { key:'PAN',   name:'PAN', full:'People–Animals–Nature', color:'#1ABC9C', leader:'Inês de Sousa Real', gov:null, ideo:[['Environmentalism',80],['Dem. socialism/Left-populism',40]] },
+      { key:'JPP',   name:'JPP', full:'Together for the People', color:'#9B59B6', leader:'Élvio Sousa', gov:null, ideo:[['Regionalism/Agrarianism',80],['Centrism',40]] },
+    ],
+    currentSeats: { AD:91, Chega:60, PS:58, IL:9, Livre:6, CDU:3, BE:1, PAN:1, JPP:1 },
+    electionSeats: { AD:91, Chega:60, PS:58, IL:9, Livre:6, CDU:3, BE:1, PAN:1, JPP:1 },
+    blocs: [
+      { label:'Left &amp; centre-left', keys:['PS','Livre','BE','CDU','PAN'] },
+      { label:'Right &amp; centre-right', keys:['AD','IL','Chega'] },
+      { label:'AD + Chega (right majority)', keys:['AD','Chega'] },
+      { label:'AD + IL (liberal-right)', keys:['AD','IL'] },
+    ],
+    notes: [
+      { l:'Seat model', t:'<b>National D\\u2019Hondt</b> over 230 seats, <b>no legal threshold</b>. Portugal\\u2019s real system runs D\\u2019Hondt inside 22 districts of very unequal size, which rewards the largest parties in big districts and imposes a high <i>effective</i> threshold on small parties in small ones. Treat this as a proportional baseline rather than a district forecast.' },
+      { l:'Polling cadence', t:'With the next election not due until 2029, Portuguese voting-intention polling is sparse — mostly a monthly Intercampus barometer plus occasional others. The most recent point shown is the <b>PolitPro weighted aggregate</b>; the 3-month window is consequently thin.' },
+      { l:'Trend', t:'AD won the May 2025 snap election, but through 2026 the <b>PS has overtaken it</b> under new leader José Luís Carneiro, while Chega has held around 21%.' },
+      { l:'JPP', t:'JPP (Juntos pelo Povo) is a Madeira-only regional party holding one seat; it is shown in the current chamber but is not polled nationally, so it never registers a projection.' },
+      { l:'Government', t:'A solid ring marks Montenegro\\u2019s AD minority government (PSD + CDS).' },
+      { l:'Sources', t:'<a href="https://en.wikipedia.org/wiki/Opinion_polling_for_the_next_Portuguese_legislative_election">Wikipedia</a> (Intercampus, Aximage, Pitagórica, CESOP–UCP), cross-checked against <a href="https://politpro.eu/en/portugal">PolitPro</a>.' },
+    ],
+    polls: [
+      ['Intercampus','2025-06-15',21.8,29.9,21.7,8.4,7.4,3.4,1.8,3.9],
+      ['Intercampus','2025-07-18',23.6,26.3,20.2,7.3,9.9,4.0,2.8,3.3],
+      ['Intercampus','2025-08-14',26.3,28.9,22.1,8.1,6.0,1.7,2.8,3.2],
+      ['Aximage','2025-09-05',23.6,25.9,26.8,6.2,6.5,3.1,2.4,1.7],
+      ['Pitagórica','2025-10-10',25.2,34.5,21.9,3.8,4.5,3.3,1.6,1.4],
+      ['Intercampus','2025-10-26',25.4,28.0,24.4,7.0,5.4,4.0,1.4,3.0],
+      ['Aximage','2025-10-27',23.8,32.4,21.9,5.9,6.1,3.2,1.3,2.0],
+      ['ICS/ISCTE','2025-11-17',28.0,31.0,24.0,4.0,3.0,3.0,2.0,0.0],
+      ['Intercampus','2025-11-19',25.2,26.1,23.6,8.0,6.5,3.9,1.9,2.4],
+      ['CESOP–UCP','2025-12-12',23.0,29.0,24.0,9.0,6.0,3.0,2.0,0.5],
+      ['Intercampus','2025-12-16',25.4,25.6,23.5,9.1,6.6,3.3,3.1,1.4],
+      ['Pitagórica','2025-12-19',23.1,29.7,22.6,7.3,7.3,2.6,1.3,0.5],
+      ['Intercampus','2026-01-13',23.4,26.3,25.1,9.4,7.6,2.2,1.8,1.3],
+      ['PolitPro agg.','2026-06-14',30.3,25.2,21.5,5.4,4.4,4.0,2.3,2.0],
+    ],
+  },
+
+  belgium: {
+    // hidden: excluded from the country dropdown (national polling too sparse to keep
+    // current — Belgian pollsters publish regionally). Config + data.json block kept
+    // intact for the planned v2.0 split into Flanders and Wallonia.
+    hidden: true,
+    flag: '🇧🇪', name: 'Belgium', year: 2026,
+    chamber: 'Chamber of Representatives', totalSeats: 150, majority: 76, threshold: 5,
+    seatMethod: 'dhondt', showThresholdLine: true, trendMax: 25,
+    electionLine: 'Last: 9 Jun 2024 — De Wever\\u2019s \\u201cArizona\\u201d coalition took office Feb 2025. Next due 2029.',
+    updated: 'Last updated: 16 Jun 2026',
+    pollKeys: ['NVA','VB','MR','PVDA','PS','VO','CDV','LE','OVLD'],
+    electionDate: '2024-06-09', electionLabel: '9 Jun 2024 election',
+    electionResult: [16.7, 13.8, 9.6, 9.7, 8.9, 7.5, 7.4, 7.0, 5.4],
+    seatingOrder: ['PVDA','PS','VO','Ecolo','Groen','LE','CDV','DEFI','OVLD','MR','NVA','VB'],
+    hemiPair: ['Government (Arizona)', 'Opposition'],
+    parties: [
+      { key:'NVA',   name:'N-VA', full:'New Flemish Alliance', color:'#FFB000', leader:'Bart De Wever (PM)', gov:'coalition', ideo:[['Neoliberalism',70],['National conservatism',50]] },
+      { key:'VB',    name:'Vlaams Belang', full:'Flemish Interest', color:'#6E5000', leader:'Tom Van Grieken', gov:null, ideo:[['National conservatism',80],['Right-populism',80]] },
+      { key:'MR',    name:'MR', full:'Reformist Movement', color:'#1E64C8', leader:'Georges-Louis Bouchez', gov:'coalition', ideo:[['Liberalism/Libertarianism',60],['Social conservatism',45]] },
+      { key:'PVDA',  name:'PVDA-PTB', full:"Workers' Party of Belgium", color:'#8B0000', leader:'Raoul Hedebouw', gov:null, ideo:[['Marxism',75],['Dem. socialism/Left-populism',55]] },
+      { key:'PS',    name:'PS', full:'Socialist Party', color:'#E84A5F', leader:'Paul Magnette', gov:null, ideo:[['Social democracy',70],['Dem. socialism/Left-populism',45]] },
+      { key:'VO',    name:'Vooruit', full:'Forward', color:'#FF5C39', leader:'Melissa Depraetere', gov:'coalition', ideo:[['Social democracy',70],['Social liberalism',45]] },
+      { key:'CDV',   name:'CD&V', full:'Christian Democratic and Flemish', color:'#F39200', leader:'Sammy Mahdi', gov:'coalition', ideo:[['Social conservatism',60],['Centrism',50]] },
+      { key:'LE',    name:'Les Engagés', full:'The Committed', color:'#00B0A6', leader:'Maxime Prévot', gov:'coalition', ideo:[['Centrism',60],['Social conservatism',40]] },
+      { key:'OVLD',  name:'Open Vld', full:'Open Flemish Liberals and Democrats', color:'#5DBDEC', leader:'Tom Ongena', gov:null, ideo:[['Neoliberalism',60],['Liberalism/Libertarianism',50]] },
+      { key:'Groen', name:'Groen', full:'Green', color:'#83C220', leader:'Jeremie Vaneeckhout', gov:null, ideo:[['Environmentalism',80],['Social liberalism',45]] },
+      { key:'Ecolo', name:'Ecolo', full:'Ecolo', color:'#2E7D32', leader:'—', gov:null, ideo:[['Environmentalism',80],['Social liberalism',45]] },
+      { key:'DEFI',  name:'DéFI', full:'Democratic Federalist Independent', color:'#C2247E', leader:'François De Smet', gov:null, ideo:[['Social liberalism',55],['Regionalism/Agrarianism',60]] },
+    ],
+    currentSeats: { NVA:24, VB:20, MR:20, PS:16, PVDA:15, LE:14, VO:13, CDV:11, OVLD:7, Groen:6, Ecolo:3, DEFI:1 },
+    electionSeats: { NVA:24, VB:20, MR:20, PS:16, PVDA:15, LE:14, VO:13, CDV:11, OVLD:7, Groen:6, Ecolo:3, DEFI:1 },
+    blocs: [
+      { label:'Government (Arizona)', keys:['NVA','MR','LE','VO','CDV'] },
+      { label:'Opposition', keys:['VB','PVDA','PS','OVLD','Groen','Ecolo','DEFI'] },
+      { label:'Flemish nationalist right', keys:['NVA','VB'] },
+      { label:'Left bloc', keys:['PVDA','PS','VO','Ecolo','Groen'] },
+      { label:'Centre-right bloc', keys:['LE','CDV','OVLD','MR'] },
+    ],
+    notes: [
+      { l:'Seat model', t:'<b>Simplified national D\\u2019Hondt</b> over 150 seats with a 5% threshold. Belgium\\u2019s real system runs D\\u2019Hondt inside 11 provincial constituencies, and — crucially — <b>parties compete only in their own language region</b> (Flanders, Wallonia or bilingual Brussels), so national vote shares are an aggregate of two largely separate party systems. Treat this as a baseline, not a constituency forecast.' },
+      { l:'Linguistic split', t:'Flemish parties: N-VA, Vlaams Belang, Vooruit, CD&amp;V, Open Vld, Groen. Francophone parties: MR, PS, Les Engagés, Ecolo, DéFI. PVDA-PTB is the only party that runs in both regions.' },
+      { l:'Sub-threshold seats', t:'Groen, Ecolo and DéFI poll 2–5% nationally — below the modelled threshold — but win seats in their regional strongholds. They appear in the current chamber but not in the national projection (shown at 0 there).' },
+      { l:'Polling cadence', t:'Belgium publishes very little <i>national</i> voting-intention polling between elections (surveys are run per-region). The series here is the 2024 result plus the current PolitPro national aggregate; the windows will deepen as the scraper accrues readings.' },
+      { l:'Government', t:'A solid ring marks the five-party \\u201cArizona\\u201d coalition under Bart De Wever (N-VA, MR, Les Engagés, Vooruit, CD&amp;V) — its 81-seat majority spans both language groups.' },
+      { l:'Sources', t:'<a href="https://politpro.eu/en/belgium">PolitPro</a> and <a href="https://europeelects.eu/belgium/">EuropeElects</a>; 2024 result via <a href="https://data.ipu.org/parliament/BE/">IPU Parline</a>.' },
+    ],
+    polls: [
+      ['Election 2024','2024-06-09',16.7,13.8,9.6,9.7,8.9,7.5,7.4,7.0,5.4],
+      ['PolitPro agg.','2026-06-14',18.7,16.0,12.0,11.3,9.3,9.3,9.3,8.0,6.0],
+    ],
+  },
+
+  austria: {
+    flag: '🇦🇹', name: 'Austria', year: 2026,
+    chamber: 'Nationalrat (National Council)', totalSeats: 183, majority: 92, threshold: 4,
+    seatMethod: 'dhondt', showThresholdLine: true, trendMax: 40,
+    electionLine: 'Last: 29 Sep 2024 — FPÖ won but couldn\\u2019t form a government; ÖVP–SPÖ–NEOS govern. Next due 2029.',
+    updated: 'Last updated: 16 Jun 2026',
+    pollKeys: ['FPÖ','ÖVP','SPÖ','Grüne','NEOS','KPÖ'],
+    electionDate: '2024-09-29', electionLabel: '29 Sep 2024 election',
+    electionResult: [28.85, 26.27, 21.14, 8.24, 9.14, 2.40],
+    seatingOrder: ['KPÖ','Grüne','SPÖ','NEOS','ÖVP','FPÖ'],
+    hemiPair: ['Left bloc', 'Right bloc'],
+    parties: [
+      { key:'FPÖ',  name:'FPÖ', full:'Freedom Party of Austria', color:'#005DA4', leader:'Herbert Kickl', gov:null, ideo:[['Right-populism',85],['National conservatism',70]] },
+      { key:'ÖVP',  name:'ÖVP', full:"Austrian People's Party", color:'#63C3D0', leader:'Christian Stocker (Chancellor)', gov:'coalition', ideo:[['Social conservatism',60],['Fiscal conservatism',50]] },
+      { key:'SPÖ',  name:'SPÖ', full:'Social Democratic Party of Austria', color:'#CE000C', leader:'Andreas Babler', gov:'coalition', ideo:[['Social democracy',75],['Dem. socialism/Left-populism',45]] },
+      { key:'Grüne',name:'Grüne', full:'The Greens', color:'#88B626', leader:'Werner Kogler', gov:null, ideo:[['Environmentalism',80],['Social liberalism',50]] },
+      { key:'NEOS', name:'NEOS', full:'NEOS – The New Austria', color:'#E84188', leader:'Beate Meinl-Reisinger', gov:'coalition', ideo:[['Liberalism/Libertarianism',70],['Modern liberalism',60]] },
+      { key:'KPÖ',  name:'KPÖ', full:'Communist Party of Austria', color:'#A50021', leader:'Tobias Schweiger', gov:null, ideo:[['Marxism',70],['Dem. socialism/Left-populism',50]] },
+    ],
+    currentSeats: { FPÖ:57, ÖVP:51, SPÖ:41, NEOS:18, Grüne:16, KPÖ:0 },
+    electionSeats: { FPÖ:57, ÖVP:51, SPÖ:41, NEOS:18, Grüne:16, KPÖ:0 },
+    blocs: [
+      { label:'Centrist coalition', keys:['SPÖ','NEOS','ÖVP'] },
+      { label:'Left bloc', keys:['KPÖ','SPÖ','Grüne'] },
+      { label:'Right bloc', keys:['FPÖ','ÖVP'] },
+    ],
+    notes: [
+      { l:'Seat model', t:'<b>Simplified national D\\u2019Hondt</b> over 183 seats, 4% threshold. Austria\\u2019s real system allocates in three tiers (39 regional, then 9 state, then federal constituencies), but because it is cleanly proportional the national model tracks the real outcome closely — a party also qualifies by winning a regional <i>Grundmandat</i>.' },
+      { l:'Government', t:'A solid ring marks the ÖVP–SPÖ–NEOS \\u201csugar\\u201d coalition under Chancellor Christian Stocker (since Mar 2025), formed only after FPÖ leader Herbert Kickl — despite topping the election — failed to assemble a majority. On current polling that three-party majority is on a knife-edge.' },
+      { l:'FPÖ surge', t:'The FPÖ has climbed from 28.8% at the 2024 election to ~37%, comfortably leading every recent poll.' },
+      { l:'KPÖ', t:'The Communist KPÖ hovers around the 4% threshold and won no seats in 2024; whether it enters the chamber depends on clearing 4% nationally or taking a regional basic mandate.' },
+      { l:'Sources', t:'<a href="https://politpro.eu/en/austria/opinion-polls">PolitPro</a> (Lazarsfeld, OGM), cross-checked against <a href="https://en.wikipedia.org/wiki/Opinion_polling_for_the_next_Austrian_legislative_election">Wikipedia</a> and <a href="https://europeelects.eu/austria/">EuropeElects</a>.' },
+    ],
+    polls: [
+      ['INSA','2025-07-17',37,19,20,9,10,4],
+      ['INSA','2025-08-27',37,19,20,9,9,4],
+      ['Lazarsfeld','2025-09-15',36,21,18,8,11,3],
+      ['Lazarsfeld','2025-10-13',38,21,17,7,11,4],
+      ['Lazarsfeld','2025-11-17',38,19,18,9,11,2],
+      ['Lazarsfeld','2025-12-09',38,18,18,9,11,3],
+      ['INSA','2026-01-14',37,20,20,8,9,3],
+      ['INSA','2026-02-24',38,19,19,7,9,3],
+      ['Lazarsfeld','2026-03-03',36,23,18,10,8,3],
+      ['Lazarsfeld','2026-03-10',36,20,19,10,8,4],
+      ['Lazarsfeld','2026-03-24',36,21,18,11,7,3],
+      ['Lazarsfeld','2026-03-31',36,18,19,11,8,3],
+      ['Lazarsfeld','2026-04-07',37,18,19,11,7,4],
+      ['OGM','2026-05-20',37,20,16,13,8,4],
+      ['PolitPro agg.','2026-06-14',37.3,19.7,17.6,11.5,8,3],
+    ],
+  },
+};
+
+// =================== GENERIC ENGINE ===================
+let CHART = null;
+let CURRENT = null;   // active country config
+let STATE = {};       // current seat sets for the majority builder
+let DATA_SOURCE = 'embedded fallback';
+
+function byKey(k) { return CURRENT.parties.find(p => p.key === k); }
+// poll columns are stored in CURRENT.pollKeys order, which may differ from the
+// display order of CURRENT.parties — always resolve a party's column via its key.
+function colOf(key) { return CURRENT.pollKeys.indexOf(key) + 2; }
+
+// ---- time-window machinery -------------------------------------------------
+// Reference "today" for the rolling windows — the REAL current date, so a new
+// weighted-average tab unlocks automatically once 3 / 6 / 12 months have elapsed
+// since the last election. The daily scraper refresh keeps polls populated inside
+// each window, so the unlocking and the data stay in step.
+const AS_OF = new Date().toISOString().slice(0, 10);
+function ymOf(iso) { const [y, m] = iso.split('-').map(Number); return y * 12 + m; }
+function cutoffISO(months) {
+  const [y, m, d] = AS_OF.split('-').map(Number);
+  let mm = m - months, yy = y; while (mm <= 0) { mm += 12; yy -= 1; }
+  return `${yy}-${String(mm).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+// polls (chronological) whose fieldwork date is on/after the window cutoff
+function pollsInWindow(months) {
+  const cut = cutoffISO(months);
+  return CURRENT.polls.filter(r => r[1] >= cut);
+}
+// recency-weighted average of a poll subset for one party key
+function weightedAvgOf(subset, key) {
+  const n = subset.length; if (!n) return null;
+  const wSum = n * (n + 1) / 2, c = colOf(key);
+  let t = 0; subset.forEach((row, i) => t += row[c] * (i + 1));
+  return t / wSum;
+}
+// mean of the oldest ~40% of a subset — the "start of window" baseline for trend
+function earlyMeanOf(subset, key) {
+  const n = subset.length; if (!n) return null;
+  const k = Math.max(1, Math.ceil(n * 0.4)), c = colOf(key);
+  const s = subset.slice(0, k);
+  return s.reduce((a, row) => a + row[c], 0) / s.length;
+}
+// which window tabs to show: a window is valid only if its whole range sits on or
+// after the last election (compared at month granularity, per the agreed rule).
+const WINDOWS = [{ m: 3, label: 'Last 3 months' }, { m: 6, label: 'Last 6 months' }, { m: 12, label: 'Last 12 months' }];
+function visibleWindows() {
+  const elYM = CURRENT.electionDate ? ymOf(CURRENT.electionDate) : -Infinity;
+  return WINDOWS.filter(w => ymOf(cutoffISO(w.m)) >= elYM);
+}
+
+function allocateSeats(voteMap) {
+  const seats = CURRENT.totalSeats, thr = CURRENT.threshold;
+  const qual = {}; Object.keys(voteMap).forEach(k => { if (voteMap[k] >= thr) qual[k] = voteMap[k]; });
+  const s = {}; Object.keys(qual).forEach(k => s[k] = 0);
+  if (CURRENT.seatMethod === 'dhondt') {
+    for (let i = 0; i < seats; i++) {
+      let best = null, bq = -1;
+      Object.keys(qual).forEach(k => { const q = qual[k] / (s[k] + 1); if (q > bq) { bq = q; best = k; } });
+      s[best]++;
+    }
+  } else if (CURRENT.seatMethod === 'largestRemainder') {
+    const tot = Object.keys(qual).reduce((a, k) => a + qual[k], 0);
+    const quota = tot / seats;
+    Object.keys(qual).forEach(k => s[k] = Math.floor(qual[k] / quota));
+    let left = seats - Object.keys(s).reduce((a, k) => a + s[k], 0);
+    const byRem = Object.keys(qual).sort((a, b) => ((qual[b] / quota) - s[b]) - ((qual[a] / quota) - s[a]));
+    for (let i = 0; i < left; i++) s[byRem[i]]++;
+  } else { // modified Sainte-Laguë
+    const first = CURRENT.firstDivisor || 1.0;
+    for (let i = 0; i < seats; i++) {
+      let best = null, bq = -1;
+      Object.keys(qual).forEach(k => { const d = s[k] === 0 ? first : 2 * s[k] + 1; const q = qual[k] / d; if (q > bq) { bq = q; best = k; } });
+      s[best]++;
+    }
+  }
+  return s;
+}
+
+function emblem(key, color) {
+  const len = key.length;
+  const fs = len >= 6 ? 9.5 : len === 5 ? 10.5 : len === 4 ? 11.5 : len === 3 ? 13 : 15;
+  return `<span class="emblem" style="color:${color};background:${color}1F;font-size:${fs}px;" aria-hidden="true">${key}</span>`;
+}
+
+function govBadge(gov) {
+  return gov === 'coalition'
+    ? '<span class="govb gov-c" title="In cabinet">in government</span>'
+    : gov === 'support'
+      ? '<span class="govb gov-s" title="Confidence &amp; supply">supports gov</span>'
+      : '<span class="govb gov-o">opposition</span>';
+}
+
+function renderCards(containerId, voteMap, trendMap, trendLabel) {
+  const el = document.getElementById(containerId); el.innerHTML = '';
+  CURRENT.parties.map((p, i) => ({ ...p, idx: i, val: voteMap[p.key] }))
+    .filter(p => p.val != null)
+    .sort((a, b) => b.val - a.val).forEach(p => {
+      let trendHtml = '<p class="ptrend">&nbsp;</p>';
+      if (trendMap && !p.newcomer && trendMap[p.key] != null) {
+        const d = trendMap[p.key];
+        trendHtml = `<p class="ptrend" style="color:${d >= 0 ? '#2E7D32' : '#B03030'};">${d >= 0 ? '▲ +' : '▼ −'}${Math.abs(d).toFixed(1)} ${trendLabel || ''}</p>`;
+      }
+      const badge = p.newcomer
+        ? `<span class="govb newc" title="${p.newcomerSource || ''}">newcomer · not in average</span>`
+        : govBadge(p.gov);
+      const card = document.createElement('div');
+      card.className = 'pcard'; card.style.setProperty('--pc', p.color);
+      card.innerHTML = `
+        <div class="chead">${emblem(p.key, p.color)}
+          <div class="ctitle"><p class="pname">${p.name}</p><p class="pfull">${p.full}</p></div>
+        </div>
+        <div class="leaderrow"><span class="pleader">${p.leader}</span></div>
+        ${badge}
+        <p class="pavg">${p.val.toFixed(1)}%${p.newcomer ? ' <span class="estmark">est</span>' : ''}</p>
+        ${trendHtml}
+        ${p.ideo.map(([nm, v]) => `<div class="ideo"><span class="nm">${nm}</span><span class="val">${v}</span></div><div class="bar"><div style="width:${v}%;"></div></div>`).join('')}
+        ${(!p.newcomer && p.val < CURRENT.threshold) ? '<span class="below">below threshold</span>' : ''}`;
+      el.appendChild(card);
+    });
+}
+
+function renderHemicycle(containerId, seatCount, voteMap) {
+  const host = document.getElementById(containerId);
+  host.innerHTML = `<div class="hemi-legend"></div><div class="hemi-wrap"><svg viewBox="0 0 700 380" width="100%" role="img"></svg><div class="hemi-tip"></div></div><p class="majline"></p>`;
+  const svg = host.querySelector('svg'), tip = host.querySelector('.hemi-tip');
+  const MAJ = CURRENT.majority;
+
+  const seatList = [];
+  CURRENT.seatingOrder.forEach(k => { const p = byKey(k); const n = seatCount[k] || 0; for (let i = 0; i < n; i++) seatList.push(p); });
+  const TOTAL = seatList.length;
+
+  const ROWS = 9, R_IN = 130, R_OUT = 330, CX = 350, CY = 360, DOT = TOTAL > 200 ? 7 : 8.5;
+  const radii = Array.from({length: ROWS}, (_, i) => R_IN + (R_OUT - R_IN) * i / (ROWS - 1));
+  const rsum = radii.reduce((a, b) => a + b, 0);
+  let rowSeats = radii.map(r => Math.round(TOTAL * r / rsum));
+  rowSeats[ROWS - 1] += TOTAL - rowSeats.reduce((a, b) => a + b, 0);
+
+  const positions = [];
+  rowSeats.forEach((count, ri) => {
+    const r = radii[ri];
+    for (let i = 0; i < count; i++) {
+      const ang = Math.PI - (count === 1 ? Math.PI / 2 : Math.PI * i / (count - 1));
+      positions.push({ x: CX + r * Math.cos(ang), y: CY - r * Math.sin(ang), ang });
+    }
+  });
+  positions.sort((a, b) => b.ang - a.ang);
+
+  const NS = 'http://www.w3.org/2000/svg';
+  positions.forEach((pos, i) => {
+    const party = seatList[i]; if (!party) return;
+    const c = document.createElementNS(NS, 'circle');
+    c.setAttribute('cx', pos.x.toFixed(1)); c.setAttribute('cy', pos.y.toFixed(1)); c.setAttribute('r', DOT);
+    c.setAttribute('fill', party.color);
+    c.setAttribute('data-party', party.key);
+    c.setAttribute('class', 'seat-dot');
+    if (party.gov === 'coalition') { c.setAttribute('stroke', '#1C1A17'); c.setAttribute('stroke-width', '1.4'); }
+    if (party.gov === 'support')   { c.setAttribute('stroke', '#1C1A17'); c.setAttribute('stroke-width', '1.4'); c.setAttribute('stroke-dasharray', '2.5 2'); }
+    c.style.cursor = 'pointer';
+    const govTxt = party.gov === 'coalition' ? ' · in government' : party.gov === 'support' ? ' · supports gov' : ' · opposition';
+    const share = (voteMap && (party.key in voteMap)) ? ` (${voteMap[party.key].toFixed(1)}%)` : '';
+    c.addEventListener('mouseenter', () => {
+      tip.textContent = `${party.name} — ${seatCount[party.key] || 0} seats${share}${govTxt} · ${party.leader}`;
+      const wrap = svg.getBoundingClientRect();
+      tip.style.left = ((pos.x / 700) * wrap.width) + 'px';
+      tip.style.top  = ((pos.y / 380) * wrap.height) + 'px';
+      tip.style.opacity = 1;
+    });
+    c.addEventListener('mouseleave', () => tip.style.opacity = 0);
+    svg.appendChild(c);
+  });
+
+  const mj = document.createElementNS(NS, 'line');
+  mj.setAttribute('x1', CX); mj.setAttribute('y1', CY - R_OUT - 14); mj.setAttribute('x2', CX); mj.setAttribute('y2', CY - R_IN + 14);
+  mj.setAttribute('stroke', 'rgba(28,26,23,0.4)'); mj.setAttribute('stroke-dasharray', '5 4'); mj.setAttribute('stroke-width', '1.3');
+  svg.appendChild(mj);
+  const mt = document.createElementNS(NS, 'text');
+  mt.setAttribute('x', CX); mt.setAttribute('y', CY - R_OUT - 20); mt.setAttribute('text-anchor', 'middle'); mt.setAttribute('font-size', '12'); mt.setAttribute('fill', '#6E6A62');
+  mt.textContent = MAJ + ' — majority'; svg.appendChild(mt);
+
+  // bloc tallies — use configured hemiPair if present, else first/last bloc
+  const pair = CURRENT.hemiPair
+    ? CURRENT.hemiPair.map(lbl => CURRENT.blocs.find(b => b.label === lbl)).filter(Boolean)
+    : [CURRENT.blocs[0], CURRENT.blocs[CURRENT.blocs.length - 1]];
+  const b0 = pair[0], b1 = pair[1];
+  const sum0 = b0.keys.reduce((a, k) => a + (seatCount[k] || 0), 0);
+  const sum1 = b1.keys.reduce((a, k) => a + (seatCount[k] || 0), 0);
+  host.querySelector('.majline').innerHTML = `Majority ${MAJ} of ${CURRENT.totalSeats} · ${b0.label.split(' (')[0]} <b>${sum0}</b> · ${b1.label.split(' (')[0]} <b>${sum1}</b>`;
+
+  const leg = host.querySelector('.hemi-legend');
+  const allDots = () => svg.querySelectorAll('circle.seat-dot');
+  CURRENT.seatingOrder.forEach(k => {
+    const p = byKey(k); const n = seatCount[k] || 0;
+    const govCls = p.gov === 'coalition' ? ' gov-c' : p.gov === 'support' ? ' gov-s' : '';
+    const tag = p.gov === 'coalition' ? ' <span class="gv">GOV</span>' : p.gov === 'support' ? ' <span class="sp">SUP</span>' : '';
+    const item = document.createElement('span');
+    item.className = 'hl' + govCls; item.setAttribute('data-key', k);
+    item.style.setProperty('--cc', p.color);
+    item.innerHTML = `<span class="sq" style="background:${p.color};${n === 0 ? 'opacity:.3;' : ''}"></span><span class="hl-key">${p.key}</span><span class="hl-n">${n}</span>${tag}`;
+    item.addEventListener('mouseenter', () => {
+      allDots().forEach(c => {
+        if (c.getAttribute('data-party') === k) { c.setAttribute('r', DOT + 2.2); c.style.opacity = 1; }
+        else c.style.opacity = 0.16;
+      });
+    });
+    item.addEventListener('mouseleave', () => {
+      allDots().forEach(c => { c.setAttribute('r', DOT); c.style.opacity = 1; });
+    });
+    leg.appendChild(item);
+  });
+}
+
+function renderMajorityBuilder(containerId, seatCount, idSuffix) {
+  const host = document.getElementById(containerId);
+  const present = CURRENT.seatingOrder.map(byKey).filter(p => (seatCount[p.key] || 0) > 0);
+  const TOTAL = present.reduce((a, p) => a + seatCount[p.key], 0);
+  const MAJ = CURRENT.majority;
+  const presets = [...CURRENT.blocs, { label: 'Clear', keys: [] }];
+
+  host.innerHTML = `
+    <div class="mb">
+      <div class="mb-head">
+        <span class="mb-title">⚖️ Majority builder</span>
+        <span class="mb-hint">Tap parties to assemble a coalition · ${MAJ} of ${TOTAL} needed</span>
+      </div>
+      <div class="mb-presets">${presets.map((p, i) => `<button class="mb-preset" data-preset="${i}">${p.label}</button>`).join('')}</div>
+      <div class="mb-chips">
+        ${present.map(p => `
+          <span class="mb-chip" role="button" tabindex="0" data-key="${p.key}" data-on="false" style="--cc:${p.color};--cc-tint:${p.color}1F;">
+            <span class="dot" style="background:${p.color};"></span>${p.key}
+            <span class="sc">${seatCount[p.key]}</span>
+          </span>`).join('')}
+      </div>
+      <div class="mb-meter-wrap"><div class="mb-meter" id="mbMeter-${idSuffix}"><div class="mb-majline" style="left:${(MAJ / TOTAL * 100).toFixed(2)}%;"></div></div></div>
+      <div class="mb-readout">
+        <span class="mb-total" id="mbTotal-${idSuffix}">0</span>
+        <span class="mb-status mb-no" id="mbStatus-${idSuffix}">${MAJ} short</span>
+        <span class="mb-detail" id="mbDetail-${idSuffix}">No parties selected.</span>
+      </div>
+    </div>`;
+
+  const selected = new Set();
+  const meter = document.getElementById(`mbMeter-${idSuffix}`);
+  const totalEl = document.getElementById(`mbTotal-${idSuffix}`);
+  const statusEl = document.getElementById(`mbStatus-${idSuffix}`);
+  const detailEl = document.getElementById(`mbDetail-${idSuffix}`);
+
+  function update() {
+    meter.querySelectorAll('.mb-seg').forEach(s => s.remove());
+    let sum = 0;
+    CURRENT.seatingOrder.forEach(k => {
+      if (!selected.has(k)) return;
+      const p = byKey(k);
+      const seg = document.createElement('div');
+      seg.className = 'mb-seg'; seg.style.width = (seatCount[k] / TOTAL * 100) + '%'; seg.style.background = p.color;
+      meter.appendChild(seg); sum += seatCount[k];
+    });
+    totalEl.textContent = sum;
+    if (sum >= MAJ) { statusEl.className = 'mb-status mb-ok'; statusEl.textContent = `majority +${sum - MAJ}`; }
+    else { statusEl.className = 'mb-status mb-no'; statusEl.textContent = `${MAJ - sum} short`; }
+    const names = [...selected].sort((a, b) => CURRENT.seatingOrder.indexOf(a) - CURRENT.seatingOrder.indexOf(b));
+    detailEl.textContent = names.length ? names.join(' + ') + ` = ${sum} seats` : 'No parties selected.';
+  }
+
+  host.querySelectorAll('.mb-chip').forEach(chip => {
+    const toggle = () => {
+      const k = chip.dataset.key;
+      if (selected.has(k)) { selected.delete(k); chip.dataset.on = 'false'; }
+      else { selected.add(k); chip.dataset.on = 'true'; }
+      update();
+    };
+    chip.addEventListener('click', toggle);
+    chip.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+  });
+  host.querySelectorAll('.mb-preset').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const keys = presets[+btn.dataset.preset].keys;
+      selected.clear();
+      host.querySelectorAll('.mb-chip').forEach(chip => {
+        const on = keys.includes(chip.dataset.key) && (seatCount[chip.dataset.key] || 0) > 0;
+        chip.dataset.on = on ? 'true' : 'false';
+        if (on) selected.add(chip.dataset.key);
+      });
+      update();
+    });
+  });
+  update();
+}
+
+function renderBlocs(containerId, seatCount) {
+  const html = CURRENT.blocs.map(b => {
+    const n = b.keys.reduce((a, k) => a + (seatCount[k] || 0), 0);
+    const ok = n >= CURRENT.majority;
+    return `<span class="bloc"><b>${b.label}:</b> ${n} seats${ok ? ' ✓' : ''}</span>`;
+  }).join('');
+  document.getElementById(containerId).innerHTML = html + `<span class="bloc"><b>Majority:</b> ${CURRENT.majority}</span>`;
+}
+
+function resetHemiToggle() {
+  const tabs = [...document.getElementById('hemiTabsV').querySelectorAll('.tab')];
+  tabs.forEach((t, i) => { const panel = document.getElementById(t.getAttribute('data-hemi')); t.setAttribute('aria-selected', i === 0); if (panel) panel.hidden = i !== 0; });
+}
+
+function buildTrendChart(weighted) {
+  const P = CURRENT.polls;
+  const labels = P.map(row => new Date(row[1]).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }));
+  const trendParties = CURRENT.parties.filter(p => !p.newcomer && CURRENT.pollKeys.includes(p.key));
+  // emphasise top 4 by weighted average
+  const ranked = [...trendParties].map((p) => ({ key: p.key, v: weighted[p.key] })).sort((a, b) => b.v - a.v);
+  const bold = new Set(ranked.slice(0, 4).map(r => r.key));
+  const datasets = trendParties.map((p) => ({
+    label: p.key, data: P.map(row => row[colOf(p.key)]),
+    borderColor: p.color, backgroundColor: p.color,
+    borderWidth: bold.has(p.key) ? 2.6 : 1.5, pointRadius: 2, pointHoverRadius: 4, tension: 0.35,
+  }));
+  if (CURRENT.showThresholdLine) {
+    datasets.push({ label: `${CURRENT.threshold}% threshold`, data: P.map(() => CURRENT.threshold), borderColor: 'rgba(28,26,23,0.45)', borderDash: [6, 5], borderWidth: 1.2, pointRadius: 0, pointHoverRadius: 0, tension: 0 });
+  }
+  if (CHART) CHART.destroy();
+  CHART = new Chart(document.getElementById('trendChart'), {
+    type: 'line', data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 }, color: '#1C1A17',
+          generateLabels: (chart) => chart.data.datasets
+            .map((d, i) => ({ d, i }))
+            .filter(o => !(o.d.label && o.d.label.includes('threshold')))
+            .map(({ d, i }) => {
+              const off = !chart.isDatasetVisible(i);
+              return {
+                text: d.label,
+                fillStyle: off ? 'transparent' : d.borderColor,
+                strokeStyle: d.borderColor,
+                lineWidth: off ? 2.5 : 1,
+                hidden: false,            // never strike through the name; the hollow box is the "off" cue
+                datasetIndex: i,
+                fontColor: off ? '#9A958C' : '#1C1A17'
+              };
+            })
+        } },
+        tooltip: { callbacks: {
+          title: items => CURRENT.polls[items[0].dataIndex][0] + ' · ' + items[0].label,
+          label: c => c.dataset.label.includes('threshold') ? null : ' ' + c.dataset.label + ': ' + c.parsed.y.toFixed(1) + '%'
+        } }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#6E6A62', font: { size: 10 }, maxRotation: 45, autoSkip: true, maxTicksLimit: 14 } },
+        y: { min: 0, max: CURRENT.trendMax, grid: { color: 'rgba(28,26,23,0.06)' }, ticks: { color: '#6E6A62', font: { size: 11 }, callback: v => v + '%' } }
+      }
+    }
+  });
+}
+
+// ---- view computation -------------------------------------------------------
+// Build the {voteMap, trendMap, heading, sub, banner} for a given view tab.
+function computeView(viewKey) {
+  const established = CURRENT.parties.filter(p => !p.newcomer && CURRENT.pollKeys.includes(p.key));
+  const newcomers = CURRENT.parties.filter(p => p.newcomer);
+
+  if (viewKey === 'latest') {
+    const row = CURRENT.polls[CURRENT.polls.length - 1];
+    const vote = {}; established.forEach(p => vote[p.key] = row[colOf(p.key)]);
+    newcomers.forEach(p => { vote[p.key] = p.newcomerReading; });
+    const date = new Date(row[1]).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    const newcNote = newcomers.length ? ` · plus newcomer ${newcomers.map(p => p.key).join(', ')} at last reading (${newcomers[0].newcomerSource})` : '';
+    return {
+      vote, trend: null, trendLabel: '',
+      heading: 'Standings — latest poll only',
+      sub: 'A single poll carries a margin of error of roughly ±2–3 pts per party; treat movements within that band as noise.',
+      banner: `<b>${row[0]}</b> · fieldwork ending <b>${date}</b> · the single most recent national poll${newcNote}.`
+    };
+  }
+
+  if (viewKey === 'election') {
+    const vote = {}; CURRENT.pollKeys.forEach((k, i) => { vote[k] = CURRENT.electionResult[i]; });
+    return {
+      vote, trend: null, trendLabel: '',
+      heading: `Result — ${CURRENT.electionLabel || 'last election'}`,
+      sub: 'Actual vote shares from the last national election. The “Last election’s results” tab shows the seats each party actually won; “Current chamber” reflects today’s seats, including post-election changes.',
+      banner: `<b>${CURRENT.electionLabel || 'Last election'}</b> · official vote shares. The “Last election’s results” tab shows the seats won on the day; “Current chamber” shows today’s seats after any defections, splits or by-elections.`
+    };
+  }
+
+  // rolling-window weighted averages: '3m' | '6m' | '12m'
+  const months = viewKey === '3m' ? 3 : viewKey === '6m' ? 6 : 12;
+  const subset = pollsInWindow(months);
+  const vote = {}, trend = {};
+  established.forEach(p => {
+    const w = weightedAvgOf(subset, p.key);
+    if (w == null) { vote[p.key] = null; trend[p.key] = null; return; }
+    vote[p.key] = w;
+    const e = earlyMeanOf(subset, p.key);
+    trend[p.key] = (e == null) ? null : (w - e);
+  });
+  const win = WINDOWS.find(x => x.m === months);
+  const [cy, cm] = cutoffISO(months).split('-').map(Number);
+  const fromTxt = new Date(cy, cm - 1, 1).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+  return {
+    vote, trend, trendLabel: 'vs start',
+    heading: `Weighted standings — ${win.label.toLowerCase()}`,
+    sub: `Recency-weighted average of <b>${subset.length}</b> poll${subset.length === 1 ? '' : 's'} since <b>${fromTxt}</b>. Weights: most recent × N, next × (N−1), … oldest × 1, normalised by Σ = N(N+1)/2. Trend = weighted average vs the start of the window.`,
+    banner: null
+  };
+}
+
+let ACTIVE_VIEW = null;
+function renderView(viewKey) {
+  ACTIVE_VIEW = viewKey;
+  const v = computeView(viewKey);
+  const isElection = (viewKey === 'election');
+  const firstSeats = (isElection && CURRENT.electionSeats) ? CURRENT.electionSeats : allocateSeats(v.vote);
+  STATE = { vProj: firstSeats, curr: CURRENT.currentSeats };
+
+  const banner = document.getElementById('viewBanner');
+  if (v.banner) { banner.hidden = false; banner.innerHTML = v.banner; }
+  else { banner.hidden = true; banner.innerHTML = ''; }
+
+  document.getElementById('viewHeading').textContent = v.heading;
+  document.getElementById('viewSub').innerHTML = v.sub;
+  document.getElementById('seatTotalV').textContent = CURRENT.totalSeats;
+
+  renderCards('cards-view', v.vote, v.trend, v.trendLabel);
+  renderHemicycle('hemiV-proj', firstSeats, isElection ? null : v.vote);
+  renderHemicycle('hemiV-curr', CURRENT.currentSeats, null);
+  renderMajorityBuilder('mb-view', firstSeats, 'v');
+  renderBlocs('blocs-view', firstSeats);
+  resetHemiToggle();
+  // In the 'Last election' view the first sub-toggle shows the actual seats won, not the model projection.
+  const projTab = document.querySelector('#hemiTabsV .tab[data-hemi="hemiV-proj"]');
+  if (projTab) projTab.textContent = isElection ? "Last election's results" : 'Projected';
+  const hLbl = document.getElementById('hemiHeadingLabel');
+  if (hLbl) hLbl.textContent = isElection ? 'Last election' : 'Projected chamber';
+}
+
+// build the per-country tab bar (window tabs filtered by the election rule,
+// then Latest poll only, then Last election); returns the default view key.
+function buildViewTabs() {
+  const host = document.getElementById('viewTabs'); host.innerHTML = '';
+  const defs = [];
+  visibleWindows().forEach(w => defs.push({ view: w.m === 3 ? '3m' : w.m === 6 ? '6m' : '12m', label: `Weighted avg (${w.label})` }));
+  defs.push({ view: 'latest', label: 'Latest poll only' });
+  if (CURRENT.electionResult) defs.push({ view: 'election', label: 'Last election' });
+  defs.forEach((d, i) => {
+    const b = document.createElement('button');
+    b.className = 'tab'; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', i === 0);
+    b.setAttribute('data-view', d.view); b.textContent = d.label;
+    b.addEventListener('click', () => {
+      [...host.querySelectorAll('.tab')].forEach(x => x.setAttribute('aria-selected', x === b));
+      renderView(d.view);
+    });
+    host.appendChild(b);
+  });
+  return defs[0].view;
+}
+
+function renderCountry(key) {
+  CURRENT = COUNTRIES[key];
+  const N = CURRENT.polls.length;
+
+  // header
+  document.getElementById('dashTitle').textContent = `${CURRENT.flag} ${CURRENT.name} ${CURRENT.year} — Polling Dashboard`;
+  const upd = CURRENT.updated.replace(/^Last updated:\s*/i, '');
+  const headRows = [
+    { l: 'Coverage', t: `${CURRENT.chamber} voting intention · <b>${N}</b> poll${N === 1 ? '' : 's'} on file across the last 12 months` },
+    { l: 'Election', t: CURRENT.electionLine },
+    { l: 'Updates', t: `${upd} · data: <b>${DATA_SOURCE}</b>` },
+  ];
+  document.getElementById('dashHeader').innerHTML = headRows
+    .map(n => `<div class="note-row"><span class="note-label">${n.l}</span><span class="note-text">${n.t}</span></div>`).join('');
+  const notes = (CURRENT.notes || []);
+  document.getElementById('part1Note').innerHTML = notes
+    .map(n => `<div class="note-row"><span class="note-label">${n.l}</span><span class="note-text">${n.t}</span></div>`).join('');
+  document.getElementById('part2Note').innerHTML = CURRENT.showThresholdLine
+    ? 'The dashed line marks the national threshold — parties below it win no seats.'
+    : 'No threshold line: this country has no meaningful national threshold, so every plotted party clears it.';
+
+  // trend chart: emphasise the 12-month leaders, plot every poll on file
+  const ref = {}; CURRENT.parties.filter(p => !p.newcomer && CURRENT.pollKeys.includes(p.key)).forEach(p => { const w = weightedAvgOf(pollsInWindow(12), p.key); ref[p.key] = (w == null ? 0 : w); });
+  buildTrendChart(ref);
+
+  // build tabs for this country and render the default (first) view
+  renderView(buildViewTabs());
+}
+
+// =================== TAB WIRING ===================
+// The view tabs are wired in buildViewTabs (per country). Here we wire the
+// Projected ↔ Current-chamber sub-toggle, which re-points the majority builder.
+(function wireHemiV() {
+  const tabs = [...document.getElementById('hemiTabsV').querySelectorAll('.tab')];
+  tabs.forEach(tab => tab.addEventListener('click', () => {
+    tabs.forEach(t => { const panel = document.getElementById(t.getAttribute('data-hemi')); const on = t === tab; t.setAttribute('aria-selected', on); if (panel) panel.hidden = !on; });
+    const isCurrent = tabs.indexOf(tab) === 1;
+    renderMajorityBuilder('mb-view', isCurrent ? STATE.curr : STATE.vProj, 'v');
+  }));
+})();
+
+// =================== COUNTRY DROPDOWN ===================
+const sel = document.getElementById('country');
+Object.keys(COUNTRIES).filter(k => !COUNTRIES[k].hidden).sort((a, b) => COUNTRIES[a].name.localeCompare(COUNTRIES[b].name)).forEach(k => {
+  const o = document.createElement('option');
+  o.value = k; o.textContent = `${COUNTRIES[k].flag} ${COUNTRIES[k].name}`;
+  sel.appendChild(o);
+});
+sel.addEventListener('change', () => renderCountry(sel.value));
+
+// =================== DATA LOADING (live data.json, embedded fallback) ===================
+// The polls/currentSeats/updated baked into COUNTRIES above act as a fallback so the file
+// works when opened directly. When served over http(s) (local server or GitHub Pages),
+// data.json overrides them — that file is the one the scraper rewrites on refresh.
+async function loadData() {
+  try {
+    const res = await fetch('data.json', { cache: 'no-store' });
+    if (!res.ok) throw new Error('no data.json');
+    const d = await res.json();
+    Object.keys(d).forEach(c => {
+      if (!COUNTRIES[c]) return;
+      if (Array.isArray(d[c].polls)) COUNTRIES[c].polls = d[c].polls;
+      if (d[c].currentSeats) COUNTRIES[c].currentSeats = d[c].currentSeats;
+      if (d[c].updated) COUNTRIES[c].updated = d[c].updated;
+    });
+    DATA_SOURCE = 'live (data.json)';
+  } catch (e) {
+    DATA_SOURCE = 'embedded fallback';
+  }
+}
+
+(async function init() {
+  await loadData();
+  sel.value = 'netherlands';
+  renderCountry('netherlands');
+})();
+</script>
+</body>
+</html>
