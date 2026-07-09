@@ -1,0 +1,12 @@
+# Python build artefacts
+__pycache__/
+*.pyc
+
+# Scraper quarantine output (review locally / via Action artifact, don't commit)
+review/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
