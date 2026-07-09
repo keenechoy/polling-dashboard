@@ -1,0 +1,52 @@
+# Goes in your repo at:  .github/workflows/update-polls.yml
+#
+# Runs the scraper on a schedule, commits data.json if it changed, and uploads
+# any quarantine files as a downloadable artifact for you to review.
+
+name: Update polls
+
+on:
+  schedule:
+    - cron: "0 6 * * *"        # daily at 06:00 UTC — adjust as you like
+  workflow_dispatch: {}         # also lets you run it manually from the Actions tab
+
+permissions:
+  contents: write               # needed to commit data.json back to the repo
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run scraper
+        run: python scraper.py
+
+      - name: Upload quarantine (if any)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: quarantine
+          path: review/
+          if-no-files-found: ignore
+
+      - name: Commit updated data.json
+        run: |
+          git config user.name "polls-bot"
+          git config user.email "polls-bot@users.noreply.github.com"
+          if ! git diff --quiet data.json; then
+            git add data.json
+            git commit -m "Update polls ($(date -u +%Y-%m-%d))"
+            git push
+          else
+            echo "No change to data.json"
+          fi
