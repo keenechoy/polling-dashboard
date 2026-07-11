@@ -26,6 +26,7 @@ wiring up the scheduler. See PHASE3_README.md.
 """
 
 import argparse
+import io
 import json
 import sys
 import datetime as dt
@@ -61,8 +62,10 @@ def fetch_tables(url):
     """Return all HTML tables on a page as DataFrames."""
     resp = requests.get(url, headers=HEADERS, timeout=30)
     resp.raise_for_status()
-    # flavor='lxml' is robust for Wikipedia's wikitables
-    return pd.read_html(resp.text, flavor="lxml")
+    # flavor='lxml' is robust for Wikipedia's wikitables.
+    # io.StringIO is required: pandas >=2.1 (and enforced in 3.0) treats a bare
+    # string as a path/URL, so a raw HTML string must be wrapped in a buffer.
+    return pd.read_html(io.StringIO(resp.text), flavor="lxml")
 
 
 def parse_country(cfg):
@@ -281,10 +284,35 @@ def _human_date(iso):
     return d.strftime("%-d %B %Y") if sys.platform != "win32" else d.strftime("%#d %B %Y")
 
 
+def _dump_tables(tables, limit=14):
+    """Print what pandas actually read from the page: every table's index,
+    its flattened headers, and its first data row. This is the ground truth
+    for tuning table_match / column_map / column_index_map — it's exactly what
+    the development sandbox can't see (no Wikipedia access there)."""
+    print(f"  --- page has {len(tables)} tables; showing headers ---")
+    for i, t in enumerate(tables):
+        try:
+            ft = _flatten_columns(t.copy())
+            cols = list(ft.columns)
+            print(f"    [table {i}] {len(ft)} rows · {len(cols)} cols")
+            print(f"       headers: {cols}")
+            if len(ft):
+                first = [str(x) for x in ft.iloc[0].tolist()]
+                print(f"       row[0] : {first}")
+        except Exception as e:
+            print(f"    [table {i}] (could not render: {e})")
+        if i + 1 >= limit:
+            print(f"    ... ({len(tables) - limit} more tables not shown)")
+            break
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--country", help="scrape only this country key")
     ap.add_argument("--dry-run", action="store_true", help="parse + validate, do not write")
+    ap.add_argument("--inspect", action="store_true",
+                    help="dump every table's headers + first row per country and exit "
+                         "(no parsing/merging) — use this to tune configs against the live page")
     args = ap.parse_args()
 
     config = load_json(CONFIG_FILE)
@@ -300,7 +328,17 @@ def main():
     for name, cfg in countries.items():
         print(f"\n=== {name} ===")
         try:
-            rows, warns = parse_country(cfg)
+            tables = fetch_tables(cfg["url"])
+        except Exception as exc:
+            print(f"  ERROR fetching page: {exc}")
+            continue
+
+        if args.inspect:
+            _dump_tables(tables)
+            continue
+
+        try:
+            rows, warns = _rows_from_tables(tables, cfg)
             for w in warns:
                 print("  WARN", w)
             n_ok, n_flag = merge_country(name, cfg, rows, data, review)
@@ -309,6 +347,7 @@ def main():
             print(f"  parsed {len(rows)} rows · {n_ok} new accepted · {n_flag} flagged for review")
         except Exception as exc:                       # fail safe per country
             print(f"  ERROR {exc}")
+            _dump_tables(tables)                        # show what pandas saw, for tuning
 
     if review:
         REVIEW_DIR.mkdir(exist_ok=True)
@@ -317,7 +356,9 @@ def main():
         print(f"\n{sum(len(v) for v in review.values())} poll(s) quarantined "
               f"-> review/quarantine_{stamp}.json  (bring these to chat to adjudicate)")
 
-    if args.dry_run:
+    if args.inspect:
+        print("\n[inspect] no data written")
+    elif args.dry_run:
         print("\n[dry-run] data.json not written")
     elif changed and any_success:
         save_json(DATA_FILE, data)
