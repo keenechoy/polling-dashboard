@@ -2411,7 +2411,7 @@
     ]
   },
   "spain": {
-    "updated": "Last updated: <b>4 July 2026</b> (latest poll · SocioMétrica/El Español)",
+    "updated": "Last updated: <b>10 July 2026</b> (latest poll · EM-Analytics/Electomanía)",
     "currentSeats": {
       "PP": 137,
       "PSOE": 121,
@@ -3336,6 +3336,22 @@
         1.0,
         0.8,
         0.5,
+        0.2,
+        1.0
+      ],
+      [
+        "EM-Analytics/Electomanía",
+        "2026-07-10",
+        32.8,
+        27.1,
+        18.5,
+        6.0,
+        1.9,
+        1.3,
+        1.5,
+        1.2,
+        1.0,
+        0.4,
         0.2,
         1.0
       ]
@@ -4986,6 +5002,18 @@
         4.0,
         4.0,
         2.4
+      ],
+      [
+        "ICS/ISCTE",
+        "2026-05-24",
+        31.0,
+        27.0,
+        20.0,
+        3.0,
+        3.0,
+        5.0,
+        2.0,
+        2.0
       ],
       [
         "Aximage",
