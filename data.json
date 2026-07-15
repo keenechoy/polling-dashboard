@@ -987,7 +987,7 @@
     ]
   },
   "germany": {
-    "updated": "Last updated: <b>10 July 2026</b> (latest poll · INSA)",
+    "updated": "Last updated: <b>13 July 2026</b> (latest poll · INSA)",
     "currentSeats": {
       "CDU": 208,
       "AfD": 152,
@@ -2150,6 +2150,17 @@
         12.0,
         12.0,
         11.0,
+        4.0,
+        4.0
+      ],
+      [
+        "INSA",
+        "2026-07-13",
+        21.5,
+        28.5,
+        12.0,
+        13.0,
+        10.5,
         4.0,
         4.0
       ]
