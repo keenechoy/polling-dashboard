@@ -2444,7 +2444,7 @@
     ]
   },
   "spain": {
-    "updated": "Last updated: <b>10 July 2026</b> (latest poll · EM-Analytics/Electomanía)",
+    "updated": "Last updated: <b>17 July 2026</b> (latest poll · EM-Analytics/Electomanía)",
     "currentSeats": {
       "PP": 137,
       "PSOE": 121,
@@ -3384,6 +3384,22 @@
         1.5,
         1.2,
         1.0,
+        0.4,
+        0.2,
+        1.0
+      ],
+      [
+        "EM-Analytics/Electomanía",
+        "2026-07-17",
+        32.5,
+        27.5,
+        18.3,
+        6.1,
+        2.0,
+        1.1,
+        1.5,
+        1.2,
+        0.9,
         0.4,
         0.2,
         1.0
@@ -5182,7 +5198,7 @@
     ]
   },
   "austria": {
-    "updated": "Last updated: <b>7 July 2026</b> (latest poll · Market-Lazarsfeld)",
+    "updated": "Last updated: <b>17 July 2026</b> (latest poll · IFDD)",
     "currentSeats": {
       "FPÖ": 57,
       "ÖVP": 51,
@@ -5581,6 +5597,26 @@
         8.0,
         12.0,
         4.0
+      ],
+      [
+        "INSA",
+        "2026-07-15",
+        39.0,
+        19.0,
+        18.0,
+        7.0,
+        8.0,
+        4.0
+      ],
+      [
+        "IFDD",
+        "2026-07-17",
+        37.0,
+        20.0,
+        15.0,
+        7.0,
+        13.0,
+        5.0
       ]
     ]
   }
