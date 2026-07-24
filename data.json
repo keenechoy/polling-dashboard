@@ -987,7 +987,7 @@
     ]
   },
   "germany": {
-    "updated": "Last updated: <b>20 July 2026</b> (latest poll · INSA)",
+    "updated": "Last updated: <b>20 July 2026</b> (latest poll · GMS)",
     "currentSeats": {
       "CDU": 208,
       "AfD": 152,
@@ -2207,6 +2207,17 @@
         10.5,
         4.5,
         3.5
+      ],
+      [
+        "GMS",
+        "2026-07-20",
+        23.0,
+        28.0,
+        11.0,
+        13.0,
+        10.0,
+        5.0,
+        2.0
       ]
     ]
   },
@@ -3429,7 +3440,7 @@
     ]
   },
   "italy": {
-    "updated": "Last updated: <b>16 July 2026</b> (latest poll · Termometro Politico)",
+    "updated": "Last updated: <b>23 July 2026</b> (latest poll · Termometro Politico)",
     "currentSeats": {
       "FdI": 120,
       "PD": 70,
@@ -4843,11 +4854,25 @@
         2.4,
         1.7,
         1.0
+      ],
+      [
+        "Termometro Politico",
+        "2026-07-23",
+        27.5,
+        21.7,
+        12.5,
+        7.8,
+        6.4,
+        5.9,
+        3.2,
+        2.4,
+        1.6,
+        1.1
       ]
     ]
   },
   "portugal": {
-    "updated": "Last updated: <b>14 July 2026</b> (latest poll · Intercampus)",
+    "updated": "Last updated: <b>21 July 2026</b> (latest poll · Aximage)",
     "currentSeats": {
       "AD": 91,
       "Chega": 60,
@@ -5171,6 +5196,18 @@
         4.7,
         2.1,
         2.9
+      ],
+      [
+        "Aximage",
+        "2026-07-21",
+        29.2,
+        23.2,
+        26.4,
+        7.4,
+        4.6,
+        1.8,
+        1.3,
+        2.1
       ]
     ]
   },
